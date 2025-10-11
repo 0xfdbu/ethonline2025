@@ -11,9 +11,11 @@ export const useIntentSteps = (nodes: Node[]) => {
       .map((node) => ({
         id: node.id,
         action: node.data.label.toLowerCase().includes('bridge') ? 'bridge' : 'swap',
-        params: (node as any).params || {  // Use stored params from template
-          token: 'USDC', amount: 100, fromChainId: 80002, toChainId: 84532
-        },
+        params: (node as any).params || (  // Use stored params from template
+          node.data.label.toLowerCase().includes('bridge')
+            ? { token: 'USDC', amount: 100, fromChainId: 80002, toChainId: 84532 }
+            : { toToken: 'ETH' }
+        ),
       }));
     setSteps(newSteps);
   }, [nodes]);

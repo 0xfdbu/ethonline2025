@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import type { Node, Edge, Connection } from '@xyflow/core';
 import type { ForgeResult } from '../types/intent';
-import { addEdge } from '@xyflow/react';
+import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 import { Composer } from '../components/Composer';
 import { ResultsCard } from '../components/ResultsCard';
 import { useIntentSteps } from '../hooks/useIntentSteps';
@@ -13,7 +13,7 @@ const initialNodes: Node[] = [
     type: 'input',
     data: { label: 'Start Intent' },
     position: { x: 250, y: 25 },
-    style: { background: '#1e40af', color: 'white' },
+    style: { background: 'rgba(30, 64, 175, 0.8)', color: 'white', backdropFilter: 'blur(10px)' },
   },
 ];
 
@@ -26,9 +26,19 @@ export const Home: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { steps, updateStepsFromNodes } = useIntentSteps(nodes);
 
-  const onNodesChange = (changes: any) => setNodes((nds) => changes(nds));
-  const onEdgesChange = (changes: any) => setEdges((eds) => changes(eds));
-  const onConnect = (connection: Connection) => setEdges((eds) => addEdge(connection, eds));
+  const onNodesChange = useCallback(
+    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    [],
+  );
+  const onEdgesChange = useCallback(
+    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    [],
+  );
+  const onConnect = useCallback(
+    (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
+    [],
+  );
+  const onNodesAdd = useCallback((newNode: Node) => setNodes((nds) => [...nds, newNode]), []);
 
   const onCompose = async () => {
     setLoading(true);
@@ -50,8 +60,8 @@ export const Home: React.FC = () => {
   };
 
   return (
-    <section className="w-full mb-8">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+    <div className="w-full flex flex-col items-center space-y-4">
+      <h2 className="text-xl font-semibold w-full text-left text-neon-cyan font-mono">
         Drag & Drop Intent Composer
       </h2>
       <Composer
@@ -60,21 +70,22 @@ export const Home: React.FC = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodesAdd={onNodesAdd}
       />
-      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+      <p className="text-sm text-gray-300 w-full text-left font-mono">
         Composed Steps: {steps.length} | Drag from sidebar to canvas
       </p>
       {steps.length > 0 && (
-        <details className="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300">
-          <summary>Current Steps Preview</summary>
-          <pre className="mt-2 overflow-auto">{JSON.stringify(steps, null, 2)}</pre>
+        <details className="w-full p-3 glass rounded border border-white/10 text-sm text-gray-300">
+          <summary className="cursor-pointer font-mono hover:text-neon-cyan transition-colors">Current Steps Preview</summary>
+          <pre className="mt-2 overflow-auto font-mono text-xs">{JSON.stringify(steps, null, 2)}</pre>
         </details>
       )}
-      <div className="flex justify-center mb-8 mt-4">
+      <div className="w-full flex justify-center mb-8">
         <button
           onClick={onCompose}
           disabled={loading || steps.length === 0}
-          className="px-6 py-3 bg-nexus-blue text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-8 py-3 glass bg-gradient-to-r from-crypto-emerald to-neon-cyan text-white font-semibold rounded-lg shadow-lg hover:shadow-glow transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-mono"
         >
           {loading && (
             <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -86,6 +97,6 @@ export const Home: React.FC = () => {
         </button>
       </div>
       <ResultsCard results={results} />
-    </section>
+    </div>
   );
 };

@@ -13,21 +13,21 @@ export const Header: React.FC<HeaderProps> = ({
   sidebarOpen, 
   onToggleSidebar 
 }) => (
-  <header className="bg-gradient-to-r from-nexus-blue to-indigo-600 text-white p-4 shadow-lg w-full">
+  <header className="glass bg-gradient-to-r from-nexus-blue via-nexus-blue to-crypto-emerald/80 text-white p-4 shadow-lg w-full border-b border-white/10">
     <div className="flex justify-between items-center">
-      <h1 className="text-2xl font-bold">Intent Forge</h1>
+      <h1 className="text-2xl font-bold font-mono tracking-wide">Intent Forge</h1>
       <div className="flex items-center gap-4">
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="lg:hidden p-2 rounded bg-white/20 hover:bg-white/30 transition"
+            className="lg:hidden p-2 rounded-full bg-white/10 hover:bg-white/20 transition backdrop-blur-sm"
           >
             {sidebarOpen ? '✕' : '☰'}
           </button>
         )}
         <button
           onClick={onToggleDark}
-          className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition"
+          className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition backdrop-blur-sm"
         >
           {isDark ? '☀️' : '🌙'}
         </button>

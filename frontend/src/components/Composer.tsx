@@ -1,7 +1,6 @@
 import React, { useCallback, useRef } from 'react';
 import {
   ReactFlow,
-  MiniMap,
   Controls,
   Background,
   useNodesState,
@@ -16,6 +15,7 @@ interface ComposerProps {
   onNodesChange: (changes: any) => void;
   onEdgesChange: (changes: any) => void;
   onConnect: (connection: Connection) => void;
+  onNodesAdd: (newNode: Node) => void;
 }
 
 export const Composer: React.FC<ComposerProps> = ({
@@ -24,6 +24,7 @@ export const Composer: React.FC<ComposerProps> = ({
   onNodesChange,
   onEdgesChange,
   onConnect,
+  onNodesAdd,
 }) => {
   const [nodes, setNodes, onNodesChangeInternal] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChangeInternal] = useEdgesState(initialEdges);
@@ -42,19 +43,22 @@ export const Composer: React.FC<ComposerProps> = ({
       if (!bounds) return;
 
       const templateData = event.dataTransfer.getData('application/reactflow');
-      const template = JSON.parse(templateData) as Node;  // Parse full template
+      const template = JSON.parse(templateData) as Node;
       const position = reactFlow.screenToFlowPosition({
         x: event.clientX - bounds.left,
         y: event.clientY - bounds.top,
       });
 
       const newNode: Node = {
-        id: `${template.id}-${+new Date()}`,  // Unique ID
+        id: `${template.id}-${+new Date()}`,
         type: template.type || 'default',
         position,
-        data: { label: template.data.label },  // Use template label
-        style: template.style,
-        // Store params for step mapping (used in hook)
+        data: { label: template.data.label },
+        style: { 
+          ...template.style,
+          boxShadow: '0 0 20px rgba(0, 245, 255, 0.3)',
+          transition: 'box-shadow 0.3s ease',
+        },
         params: template.params || {},
       };
 
@@ -66,7 +70,8 @@ export const Composer: React.FC<ComposerProps> = ({
   return (
     <div 
       ref={reactFlowWrapper}
-      className="w-full h-[70vh] lg:h-[80vh] border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden shadow-xl bg-white dark:bg-gray-800 relative"
+      style={{ width: '100%', height: '700px' }}
+      className="glass rounded-lg overflow-hidden shadow-2xl relative border border-neon-cyan/20"
     >
       <ReactFlow
         nodes={nodes}
@@ -77,11 +82,10 @@ export const Composer: React.FC<ComposerProps> = ({
         onDrop={onDrop}
         onDragOver={onDragOver}
         fitView
-        className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900"
+        className="w-full h-full bg-gradient-to-br from-gray-900/50 to-gray-800/50 dark:from-gray-900/70 dark:to-gray-800/70"
       >
-        <MiniMap />
         <Controls />
-        <Background variant="dots" gap={12} size={1} />
+        <Background variant="dots" gap={12} size={1} color="#00f5ff" />
       </ReactFlow>
     </div>
   );
