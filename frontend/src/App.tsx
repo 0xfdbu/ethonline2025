@@ -1,23 +1,22 @@
 import React, { useState } from 'react';
-import { ReactFlowProvider } from '@xyflow/react';  // New: Zustand provider for React Flow
+import { ReactFlowProvider } from '@xyflow/react';
+import { NexusProvider } from '@avail-project/nexus-widgets';
 import { MainLayout } from './layouts/MainLayout';
 import { Home } from './pages/Home';
 
 function App() {
   const [isDark, setIsDark] = useState(true);
 
-  // Dummy onDragStart prop (passed to layout; Home handles actual logic)
-  const onDragStart = () => {};  // Placeholder; actual in Home/Sidebar
-
   return (
-    <ReactFlowProvider>  // New: Wraps entire app for useReactFlow access
-      <MainLayout
-        isDark={isDark}
-        onToggleDark={() => setIsDark(!isDark)}
-        onDragStart={onDragStart}
-      >
-        <Home />
-      </MainLayout>
+    <ReactFlowProvider>  // Root for all React Flow hooks
+      <NexusProvider config={{ network: 'testnet' }}>  // Root for Nexus widgets (CSS override expands width)
+        <MainLayout
+          isDark={isDark}
+          onToggleDark={() => setIsDark(!isDark)}
+        >
+          <Home />
+        </MainLayout>
+      </NexusProvider>
     </ReactFlowProvider>
   );
 }

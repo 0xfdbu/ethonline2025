@@ -6,7 +6,6 @@ import {
   Background,
   useNodesState,
   useEdgesState,
-  addEdge,
   useReactFlow,
 } from '@xyflow/react';
 import type { Node, Edge, Connection } from '@xyflow/core';
@@ -42,18 +41,21 @@ export const Composer: React.FC<ComposerProps> = ({
       const bounds = reactFlowWrapper.current?.getBoundingClientRect();
       if (!bounds) return;
 
-      const type = event.dataTransfer.getData('application/reactflow');
+      const templateData = event.dataTransfer.getData('application/reactflow');
+      const template = JSON.parse(templateData) as Node;  // Parse full template
       const position = reactFlow.screenToFlowPosition({
         x: event.clientX - bounds.left,
         y: event.clientY - bounds.top,
       });
 
       const newNode: Node = {
-        id: `${type}-${+new Date()}`,
-        type,
+        id: `${template.id}-${+new Date()}`,  // Unique ID
+        type: template.type || 'default',
         position,
-        data: { label: `${type} Node` },
-        style: { background: '#10b981', color: 'white' },
+        data: { label: template.data.label },  // Use template label
+        style: template.style,
+        // Store params for step mapping (used in hook)
+        params: template.params || {},
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -64,7 +66,7 @@ export const Composer: React.FC<ComposerProps> = ({
   return (
     <div 
       ref={reactFlowWrapper}
-      className="w-full h-[70vh] lg:h-[80vh] border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden shadow-md bg-white dark:bg-gray-800 relative"
+      className="w-full h-[70vh] lg:h-[80vh] border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden shadow-xl bg-white dark:bg-gray-800 relative"
     >
       <ReactFlow
         nodes={nodes}
