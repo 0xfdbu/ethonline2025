@@ -1,0 +1,82 @@
+# ------------------------------
+# Node / Frontend (Vite + React + TypeScript)
+# ------------------------------
+node_modules/
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Vite cache
+.vite/
+vite.config.ts.timestamp-*
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage / Testing
+coverage/
+*.lcov
+
+# ------------------------------
+# Hardhat (Solidity Development)
+# ------------------------------
+cache/
+artifacts/
+typechain/
+typechain-types/
+
+# Hardhat test outputs
+coverage.json
+coverage/
+gas-report.txt
+
+# ------------------------------
+# Foundry / Forge
+# ------------------------------
+out/
+cache/
+lib/
+broadcast/
+
+# Forge temporary files
+forge-test.json
+
+# ------------------------------
+# Miscellaneous
+# ------------------------------
+tmp/
+*.tmp
+*.bak
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Local secrets or private keys
+*.key
+*.pem
+*.p12
+*.crt
+
+# VSCode build cache
+.history/
