@@ -1,3 +1,5 @@
+// components/Composer.tsx
+
 import React, { useCallback, useRef } from 'react';
 import {
   ReactFlow,
@@ -6,6 +8,7 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
+  addEdge,
 } from '@xyflow/react';
 import type { Node, Edge, Connection } from '@xyflow/core';
 
@@ -23,13 +26,20 @@ export const Composer: React.FC<ComposerProps> = ({
   initialEdges,
   onNodesChange,
   onEdgesChange,
-  onConnect,
+  onConnect: onConnectProp, // Renamed to avoid conflict
   onNodesAdd,
 }) => {
   const [nodes, setNodes, onNodesChangeInternal] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChangeInternal] = useEdgesState(initialEdges);
   const reactFlow = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+
+  const onConnectInternal = useCallback((connection: Connection) => {
+    // Add the edge internally using React Flow's addEdge helper
+    setEdges((eds) => addEdge(connection, eds));
+    // Optionally notify parent
+    onConnectProp(connection);
+  }, [setEdges, onConnectProp]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -63,8 +73,10 @@ export const Composer: React.FC<ComposerProps> = ({
       };
 
       setNodes((nds) => nds.concat(newNode));
+      // Optionally notify parent
+      onNodesAdd(newNode);
     },
-    [reactFlow, setNodes],
+    [reactFlow, setNodes, onNodesAdd],
   );
 
   return (
@@ -78,7 +90,7 @@ export const Composer: React.FC<ComposerProps> = ({
         edges={edges}
         onNodesChange={onNodesChangeInternal}
         onEdgesChange={onEdgesChangeInternal}
-        onConnect={onConnect}
+        onConnect={onConnectInternal}
         onDrop={onDrop}
         onDragOver={onDragOver}
         fitView
