@@ -6,17 +6,15 @@ import {
   Background, 
   useNodesState, 
   useEdgesState, 
-  addEdge, 
-  Node, 
-  Edge, 
-  Connection 
-} from '@xyflow/react';  // Updated import for v12.8.6
+  addEdge 
+} from '@xyflow/react';  // v12.8.6: Components/hooks/utils
+import type { Node, Edge, Connection } from '@xyflow/core';  // v12.8.6: Types only
 import { NexusProvider } from '@avail-project/nexus-widgets';
-import { IntentStep, ForgeResult } from './types/intent';
-import '@xyflow/react/dist/style.css';  // Updated mandatory CSS import
+import type { IntentStep, ForgeResult } from './types/intent';  // Type-only import for interfaces
+import '@xyflow/react/dist/style.css';  // Mandatory CSS
 import './App.css';  // Optional custom CSS
 
-// Sample initial nodes and edges for demo (unchanged)
+// Sample initial nodes and edges for demo
 const initialNodes: Node[] = [
   {
     id: '1',
@@ -39,10 +37,10 @@ const initialNodes: Node[] = [
   },
 ];
 
-const initialEdges = [
+const initialEdges: Edge[] = [  // Typed as Edge[]
   { id: 'e1-2', source: '1', target: '2', animated: true },
   { id: 'e2-3', source: '2', target: '3', animated: true },
-] as Edge[];
+];
 
 function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -118,7 +116,7 @@ function App() {
             </h2>
             <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden shadow-md bg-white dark:bg-gray-800">
               <div className="h-96 relative">
-                <ReactFlow  // Updated component
+                <ReactFlow
                   nodes={nodes}
                   edges={edges}
                   onNodesChange={onNodesChange}
