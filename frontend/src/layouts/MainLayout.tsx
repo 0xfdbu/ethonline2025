@@ -7,29 +7,23 @@ import { Sidebar } from '../components/Sidebar';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  isDark: boolean;
-  onToggleDark: () => void;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
   children,
-  isDark,
-  onToggleDark,
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className={`min-h-screen w-full ${isDark ? 'dark bg-gray-900' : 'bg-white'} transition-colors duration-300 flex flex-col w-full max-w-[1400px] mx-auto`}>
+    <div className="min-h-screen w-full  transition-colors duration-300 flex flex-col w-full max-w-[1400px] mx-auto">
       <Header 
-        isDark={isDark} 
-        onToggleDark={onToggleDark}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
       />
       <div className="flex-1 w-full flex overflow-hidden">
         {/* Sidebar: Fixed on left (lg+ inline, mobile overlay) */}
         <div 
-          className={`inset-y-0 left-0 z-50 w-64 bg-gray-100 dark:bg-gray-700 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:w-64 lg:flex-shrink-0 overflow-y-auto ${
+          className={`inset-y-0 left-0 z-50 w-96 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:w-64 lg:flex-shrink-0 overflow-y-auto ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
