@@ -1,8 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { ethers } from 'ethers';
-import { PythHttpClient } from '@pythnetwork/client';
 import type { IntentStep, SimulationResult, ForgeResult } from './types/intent';
 
 const app = express();
@@ -10,13 +8,6 @@ const PORT = 3001;
 
 app.use(cors());
 app.use(bodyParser.json());
-
-// Mock Pyth Client (latest v2.1 as of Oct 2025)
-const pythClient = new PythHttpClient('https://hermes.pyth.network');
-
-// Mock Hardhat signer/provider (for sims; expand to real fork later)
-const mockProvider = new ethers.JsonRpcProvider('https://sepolia.infura.io/v3/YOUR_INFURA_KEY'); // Replace with key
-const mockSigner = ethers.Wallet.createRandom().connect(mockProvider);
 
 // Core Endpoint: POST /api/forge
 app.post('/api/forge', async (req, res) => {
@@ -26,11 +17,13 @@ app.post('/api/forge', async (req, res) => {
       return res.status(400).json({ error: 'Invalid steps array' });
     }
 
-    // Step 1: Mock Pyth Price Pull (e.g., ETH/USD)
-    const priceFeeds = await pythClient.getLatestPrices(['Crypto.ETH/USD']);
-    const ethPrice = priceFeeds[0]?.price || 3000; // Fallback mock
+    console.log('Received steps:', userSteps);  // Debug log
 
-    // Step 2: Initial Hardhat Simulation (mock gas/latency per step)
+    // Step 1: Hardcoded Mock Price (ETH/USD = $3000; replace with real Pyth/ASI later)
+    const ethPrice = 3000;
+    console.log('Mock ETH price:', ethPrice);
+
+    // Step 2: Initial Simulation (pure mock, no ethers)
     const initialSim = await simulateStepsOnHardhat(userSteps, ethPrice, false);
 
     // Step 3: Mock ASI AI Optimization (e.g., reroute for efficiency)
@@ -45,14 +38,18 @@ app.post('/api/forge', async (req, res) => {
       initialSim,
       optimizedSim,
     };
+    console.log('Returning result:', result);  // Debug log
     res.json(result);
   } catch (error) {
-    console.error('Forge error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Forge error:', error);  // Better logging
+    if (error instanceof Error) {
+      console.error('Stack:', error.stack);
+    }
+    res.status(500).json({ error: 'Internal server error - check logs' });
   }
 });
 
-// Mock Hardhat Simulation Helper (ethers-based gas estimates)
+// Pure Mock Simulation Helper (no external deps)
 async function simulateStepsOnHardhat(
   steps: IntentStep[],
   ethPrice: number,
@@ -67,8 +64,7 @@ async function simulateStepsOnHardhat(
     const baseGas = 21000n; // Simple transfer base
     let stepGas = step.action === 'bridge' ? 150000n : 100000n;
     if (isOptimized) stepGas = (stepGas * 80n) / 100n; // 20% savings
-    const tx = { gasLimit: baseGas + stepGas };
-    gasTotal += tx.gasLimit;
+    gasTotal += baseGas + stepGas;
   }
   return {
     gasEstimate: gasTotal.toString(),

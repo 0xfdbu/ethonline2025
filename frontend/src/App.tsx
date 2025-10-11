@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   ReactFlow, 
   MiniMap, 
@@ -67,6 +67,11 @@ function App() {
     setSteps(newSteps);
   }, [nodes]);
 
+  // Real-time sync: Update steps on node/edge changes
+  useEffect(() => {
+    updateStepsFromNodes();
+  }, [nodes, edges, updateStepsFromNodes]);
+
   // On connect: Add edge and update steps
   const onConnect = useCallback(
     (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
@@ -83,11 +88,14 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(steps),
       });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       const data: ForgeResult = await response.json();
       setResults(data);
     } catch (error) {
       console.error('Forge error:', error);
-      alert('Simulation failed—check backend!');
+      alert(`Optimization failed: ${error instanceof Error ? error.message : 'Unknown error'}. Check console/backend.`);
     }
     setLoading(false);
   };
@@ -134,6 +142,13 @@ function App() {
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
               Composed Steps: {steps.length} | Drag nodes to build flows (e.g., Bridge → Swap)
             </p>
+            {/* Step Preview Card */}
+            {steps.length > 0 && (
+              <details className="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300">
+                <summary>Current Steps Preview</summary>
+                <pre className="mt-2 overflow-auto">{JSON.stringify(steps, null, 2)}</pre>
+              </details>
+            )}
           </section>
 
           {/* Action Button */}
@@ -141,8 +156,14 @@ function App() {
             <button
               onClick={onCompose}
               disabled={loading || steps.length === 0}
-              className="px-6 py-3 bg-nexus-blue text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-slow"
+              className="px-6 py-3 bg-nexus-blue text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
+              {loading && (
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
               {loading ? 'Optimizing...' : 'Simulate, Optimize & Execute'}
             </button>
           </div>
