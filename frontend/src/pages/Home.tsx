@@ -1,8 +1,10 @@
+// pages/Home.tsx
+
 import React, { useState, useCallback, useEffect } from 'react';
 import type { Node, Edge, Connection } from '@xyflow/core';
 import type { ForgeResult } from '../types/intent';
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
-import { Composer } from '../components/Composer';
+import { IntentVisualizer } from '../components/IntentVisualizer';
 import { ResultsCard } from '../components/ResultsCard';
 import { useIntentSteps } from '../hooks/useIntentSteps';
 import { Zap, Sparkles, Code2, Workflow } from 'lucide-react';
@@ -63,39 +65,12 @@ export const Home: React.FC = () => {
 
   return (
     <div className="relative w-full min-h-screen overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {/* Gradient Orbs */}
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
-        
-        {/* Grid Pattern */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent)',
-          backgroundSize: '50px 50px'
-        }}></div>
-      </div>
+
 
       {/* Main Content */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="mb-12 space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xs font-mono text-cyan-400 tracking-widest uppercase font-bold">Blockchain Forge</span>
-          </div>
-          
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-cyan-300 via-blue-300 to-emerald-300 bg-clip-text text-transparent font-mono">
-            Intent Orchestrator
-          </h1>
-          
-          <p className="text-gray-400 font-mono text-sm leading-relaxed max-w-2xl">
-            Compose intelligent transaction workflows with advanced optimization. <span className="text-cyan-400">Simulate</span> • <span className="text-emerald-400">Optimize</span> • <span className="text-blue-400">Execute</span>
-          </p>
-
           {/* Stats Bar */}
           <div className="flex flex-wrap gap-4 pt-4">
             <div className="glass px-4 py-2 rounded-lg border border-white/10 backdrop-blur-xl">
@@ -142,8 +117,8 @@ export const Home: React.FC = () => {
         {/* Content Sections */}
         {activeTab === 'composer' && (
           <div className="space-y-6">
-            <div className="glass rounded-2xl border border-white/10 backdrop-blur-xl overflow-hidden shadow-2xl" style={{ minHeight: '600px' }}>
-              <Composer
+            <div className="glass rounded-2xl border border-white/10 backdrop-blur-xl overflow-hidden shadow-2xl">
+              <IntentVisualizer
                 initialNodes={nodes}
                 initialEdges={edges}
                 onNodesChange={onNodesChange}

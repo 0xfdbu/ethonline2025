@@ -8,7 +8,7 @@ import '@xyflow/react/dist/style.css';  // Import React Flow styles globally her
 
 function App() {
   return (
-    <ReactFlowProvider>  // Root for all React Flow hooks
+    <ReactFlowProvider> 
       <MainLayout>
         <Home />
       </MainLayout>

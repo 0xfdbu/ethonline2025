@@ -24,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className={`sticky top-0 z-50 w-full transition-all duration-500 ${
+      <header className={`sticky top-0 z-100 w-full transition-all duration-500 ${
         isScrolled ? 'backdrop-blur-xl bg-slate-950/80' : 'backdrop-blur-md bg-slate-950/40'
       } border-b border-white/10 shadow-lg`}>
         <div className="max-w-7xl mx-auto px-4 py-4">

@@ -78,7 +78,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 h-screen flex flex-col glass bg-slate-950/40 backdrop-blur-xl border-r border-white/10 overflow-hidden hover:border-white/20 transition-colors">
+    <aside className="w-full h-screen flex flex-col glass bg-slate-950/40 backdrop-blur-xl border-r border-white/10 overflow-hidden hover:border-white/20 transition-colors">
       {/* Header */}
       <div className="p-4 border-b border-white/10 bg-gradient-to-r from-slate-950/60 to-slate-900/40">
         <div className="flex items-center gap-2 mb-4">
@@ -215,28 +215,6 @@ export const Sidebar: React.FC = () => {
           Tip: Drag nodes to canvas
         </p>
       </div>
-
-      <style>{`
-        /* Scrollbar styling */
-        aside::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        aside::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 10px;
-        }
-
-        aside::-webkit-scrollbar-thumb {
-          background: rgba(6, 182, 212, 0.3);
-          border-radius: 10px;
-          transition: background 0.3s;
-        }
-
-        aside::-webkit-scrollbar-thumb:hover {
-          background: rgba(6, 182, 212, 0.6);
-        }
-      `}</style>
     </aside>
   );
 };
