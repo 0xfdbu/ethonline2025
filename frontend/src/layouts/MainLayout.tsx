@@ -1,4 +1,7 @@
+// layouts/MainLayout.tsx
+
 import React, { useState } from 'react';
+import { NexusProvider } from '@avail-project/nexus-widgets';
 import { Header } from '../components/Header';
 import { Sidebar } from '../components/Sidebar';
 
@@ -42,7 +45,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         {/* Wrapper: Max 1400px centered, main takes right space */}
         <div className="flex-1 relative">
           <main className="flex-1 w-full p-2 lg:p-6 overflow-auto">
-            {children}
+            <NexusProvider config={{ network: 'testnet' }}>
+              {children}
+            </NexusProvider>
           </main>
         </div>
       </div>

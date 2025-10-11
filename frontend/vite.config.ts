@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-
+import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     react(),
     nodePolyfills({
       buffer: true,
@@ -23,8 +24,5 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
     },
-  },
-  css: {
-    postcss: undefined,  // Disable explicit PostCSS—let Vite's built-in handle Tailwind
-  },
+  }
 });
