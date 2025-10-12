@@ -244,6 +244,11 @@ export const Composer: React.FC<ComposerProps> = ({
 
       setNodes((nds) => nds.concat(newNode));
       onNodesAdd(newNode);
+
+      // Fit view to include the new node at the exact drop position
+      requestAnimationFrame(() => {
+        reactFlow.fitView({ padding: 0.2, includeHiddenNodes: false });
+      });
     },
     [reactFlow, setNodes, onNodesAdd]
   );
@@ -286,61 +291,6 @@ export const Composer: React.FC<ComposerProps> = ({
           className="!bg-slate-950/80 !border-cyan-500/20"
         />
       </ReactFlow>
-
-      <style>{`
-        @keyframes dashflow {
-          0% { stroke-dashoffset: 0; }
-          100% { stroke-dashoffset: -10; }
-        }
-
-        .react-flow__node {
-          background: transparent;
-          border: none;
-          padding: 0;
-        }
-
-        .react-flow__handle {
-          width: 16px !important;
-          height: 16px !important;
-          background: linear-gradient(135deg, rgba(6, 182, 212, 0.9), rgba(59, 130, 246, 0.9)) !important;
-          border: 2px solid rgba(15, 23, 42, 1) !important;
-          border-radius: 50% !important;
-          cursor: crosshair !important;
-          box-shadow: 0 0 12px rgba(6, 182, 212, 0.8) !important;
-          transition: all 0.3s ease !important;
-          opacity: 1 !important;
-          visibility: visible !important;
-        }
-
-        .react-flow__handle:hover {
-          width: 20px !important;
-          height: 20px !important;
-          box-shadow: 0 0 20px rgba(6, 182, 212, 1), 0 0 30px rgba(59, 130, 246, 0.7) !important;
-          background: linear-gradient(135deg, rgba(6, 182, 212, 1), rgba(59, 130, 246, 1)) !important;
-        }
-
-        .react-flow__handle.connectingFrom {
-          box-shadow: 0 0 20px rgba(16, 185, 129, 0.9) !important;
-        }
-
-        .react-flow__controls {
-          gap: 4px;
-        }
-
-        .react-flow__controls button {
-          background: rgba(6, 182, 212, 0.1) !important;
-          border: 1px solid rgba(6, 182, 212, 0.3) !important;
-          border-radius: 8px !important;
-          color: rgba(6, 182, 212, 0.7) !important;
-          transition: all 0.3s;
-        }
-
-        .react-flow__controls button:hover {
-          background: rgba(6, 182, 212, 0.2) !important;
-          border-color: rgba(6, 182, 212, 0.6) !important;
-          color: rgba(6, 182, 212, 1) !important;
-        }
-      `}</style>
     </div>
   );
 };

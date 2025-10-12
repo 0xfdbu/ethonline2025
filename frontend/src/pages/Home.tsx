@@ -68,7 +68,7 @@ export const Home: React.FC = () => {
 
 
       {/* Main Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 py-8">
+      <div className="relative z-10 w-full mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="mb-12 space-y-4">
           {/* Stats Bar */}
