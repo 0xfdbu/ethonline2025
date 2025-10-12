@@ -23,7 +23,7 @@ export const IntentVisualizer: React.FC<IntentVisualizerProps> = ({
   onNodesAdd,
 }) => {
   return (
-    <div className="flex h-[800px]">
+    <div className="flex h-full">
       {/* Sidebar */}
       <div className="w-96 ">
         <Sidebar />

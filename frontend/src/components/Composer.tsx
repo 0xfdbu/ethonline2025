@@ -1,4 +1,5 @@
-// components/Composer.tsx
+// frontend/src/components/Composer.tsx
+
 import React, { useCallback, useRef, useMemo } from 'react';
 import {
   ReactFlow,
@@ -19,7 +20,7 @@ import { Send, Repeat2, Zap } from 'lucide-react';
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
 
-// Custom Node Components
+// Custom Node Components (unchanged)
 const BridgeNode = ({ data, selected }: any) => (
   <div
     className={`px-3 py-2 rounded-lg backdrop-blur-md transition-all duration-300 ${
@@ -102,7 +103,7 @@ const StartNode = ({ data, selected }: any) => (
   </div>
 );
 
-// Custom edge component with animated arrow
+// Custom edge component (unchanged)
 const CustomEdge = ({
   id,
   sourceX,
@@ -227,6 +228,8 @@ export const Composer: React.FC<ComposerProps> = ({
       if (!bounds) return;
 
       const templateData = event.dataTransfer.getData('application/reactflow');
+      if (!templateData) return; // No template, ignore
+
       const template = JSON.parse(templateData) as Node;
 
       const position = reactFlow.screenToFlowPosition({
@@ -236,16 +239,16 @@ export const Composer: React.FC<ComposerProps> = ({
 
       const newNode: Node = {
         id: `${template.id}-${+new Date()}`,
-        type: template.id,
+        type: template.type as any,
         position,
-        data: { label: template.data.label },
+        data: { ...template.data },
         params: template.params || {},
       };
 
       setNodes((nds) => nds.concat(newNode));
       onNodesAdd(newNode);
 
-      // Fit view to include the new node at the exact drop position
+      // Fit view to include the new node
       requestAnimationFrame(() => {
         reactFlow.fitView({ padding: 0.2, includeHiddenNodes: false });
       });
@@ -256,7 +259,7 @@ export const Composer: React.FC<ComposerProps> = ({
   return (
     <div
       ref={reactFlowWrapper}
-      style={{ width: '100%', height: '700px' }}
+      style={{ width: '100%', height: '100%' }} // Full height, no marginLeft - handled by parent flex
       className="relative rounded-2xl overflow-hidden shadow-2xl"
     >
       <ReactFlow
@@ -272,7 +275,7 @@ export const Composer: React.FC<ComposerProps> = ({
         fitView
         className="w-full h-full"
         style={{
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)',
+          background: 'transparent',
         }}
       >
         <Background

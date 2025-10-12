@@ -12,7 +12,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   children,
 }) => {
   return (
-    <div className="min-h-screen w-full transition-colors duration-300 flex flex-col w-full max-w-[1400px] mx-auto">
+    <div className="min-h-screen w-full transition-colors duration-300 flex flex-col w-full">
       <Header />
       <div className="flex-1 w-full overflow-hidden">
         <div className="flex-1 relative">
