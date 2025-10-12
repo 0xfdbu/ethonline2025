@@ -16,7 +16,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       <Header />
       <div className="flex-1 w-full overflow-hidden">
         <div className="flex-1 relative">
-          <main className="flex-1 w-full p-2 lg:p-6 overflow-auto">
+          <main className="flex-1 w-full p-2 lg:p-6 overflow-auto mx-auto">
             <NexusProvider config={{ network: 'testnet' }}>
               {children}
             </NexusProvider>

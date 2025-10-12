@@ -260,7 +260,7 @@ export const Composer: React.FC<ComposerProps> = ({
     <div
       ref={reactFlowWrapper}
       style={{ width: '100%', height: '100%' }} // Full height, no marginLeft - handled by parent flex
-      className="relative rounded-2xl overflow-hidden shadow-2xl"
+      className="relative rounded-2xl overflow-hidden"
     >
       <ReactFlow
         nodes={nodes}
