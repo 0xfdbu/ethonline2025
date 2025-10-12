@@ -1,3 +1,5 @@
+// components/ResultsCard.tsx
+
 import React from 'react';
 import type { ForgeResult } from '../types/intent';
 

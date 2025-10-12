@@ -1,6 +1,5 @@
 // components/Composer.tsx
-
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useMemo } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -9,8 +8,154 @@ import {
   useEdgesState,
   useReactFlow,
   addEdge,
+  Handle,
+  Position,
+  NodeTypes,
+  EdgeTypes,
 } from '@xyflow/react';
 import type { Node, Edge, Connection } from '@xyflow/core';
+import { Send, Repeat2, Zap } from 'lucide-react';
+
+const initialNodes: Node[] = [];
+const initialEdges: Edge[] = [];
+
+// Custom Node Components
+const BridgeNode = ({ data, selected }: any) => (
+  <div
+    className={`px-3 py-2 rounded-lg backdrop-blur-md transition-all duration-300 ${
+      selected ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-500/50' : 'hover:ring-1 hover:ring-cyan-400/50'
+    }`}
+    style={{
+      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(6, 182, 212, 0.15) 100%)',
+      border: selected ? '2px solid rgba(6, 182, 212, 1)' : '2px solid rgba(6, 182, 212, 0.5)',
+      boxShadow: selected ? '0 0 20px rgba(6, 182, 212, 0.4)' : 'none',
+      minWidth: '160px',
+    }}
+  >
+    <Handle type="target" position={Position.Left} />
+    
+    <div className="flex items-center gap-2">
+      <div className="p-1.5 bg-gradient-to-br from-emerald-500 to-cyan-600 rounded-md flex-shrink-0">
+        <Send className="w-3 h-3 text-white" strokeWidth={2.5} />
+      </div>
+      <div className="min-w-0">
+        <p className="font-mono font-bold text-xs text-white truncate">{data.label}</p>
+        <p className="font-mono text-xs text-gray-300 truncate">Bridge</p>
+      </div>
+    </div>
+
+    <Handle type="source" position={Position.Right} />
+  </div>
+);
+
+const SwapNode = ({ data, selected }: any) => (
+  <div
+    className={`px-3 py-2 rounded-lg backdrop-blur-md transition-all duration-300 ${
+      selected ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-500/50' : 'hover:ring-1 hover:ring-cyan-400/50'
+    }`}
+    style={{
+      background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.3) 0%, rgba(59, 130, 246, 0.15) 100%)',
+      border: selected ? '2px solid rgba(6, 182, 212, 1)' : '2px solid rgba(6, 182, 212, 0.5)',
+      boxShadow: selected ? '0 0 20px rgba(6, 182, 212, 0.4)' : 'none',
+      minWidth: '160px',
+    }}
+  >
+    <Handle type="target" position={Position.Left} />
+    
+    <div className="flex items-center gap-2">
+      <div className="p-1.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-md flex-shrink-0">
+        <Repeat2 className="w-3 h-3 text-white" strokeWidth={2.5} />
+      </div>
+      <div className="min-w-0">
+        <p className="font-mono font-bold text-xs text-white truncate">{data.label}</p>
+        <p className="font-mono text-xs text-gray-300 truncate">Swap</p>
+      </div>
+    </div>
+
+    <Handle type="source" position={Position.Right} />
+  </div>
+);
+
+const StartNode = ({ data, selected }: any) => (
+  <div
+    className={`px-4 py-2.5 rounded-lg backdrop-blur-md transition-all duration-300 ${
+      selected ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-500/50' : 'hover:ring-1 hover:ring-cyan-400/50'
+    }`}
+    style={{
+      background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.4) 0%, rgba(6, 182, 212, 0.25) 100%)',
+      border: selected ? '2px solid rgba(6, 182, 212, 1)' : '2px solid rgba(6, 182, 212, 0.6)',
+      boxShadow: selected ? '0 0 25px rgba(6, 182, 212, 0.5)' : '0 0 15px rgba(6, 182, 212, 0.25)',
+      minWidth: '180px',
+    }}
+  >
+    <div className="flex items-center gap-2">
+      <div className="p-2 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-md flex-shrink-0">
+        <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
+      </div>
+      <div className="min-w-0">
+        <p className="font-mono font-bold text-sm text-white">{data.label}</p>
+        <p className="font-mono text-xs text-cyan-300">Intent</p>
+      </div>
+    </div>
+
+    <Handle type="source" position={Position.Right} />
+  </div>
+);
+
+// Custom edge component with animated arrow
+const CustomEdge = ({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  selected,
+}: any) => {
+  return (
+    <svg
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        pointerEvents: 'none',
+      }}
+      width="100%"
+      height="100%"
+      viewBox="0 0 100% 100%"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <linearGradient id={`gradient-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="rgba(6, 182, 212, 0.9)" />
+          <stop offset="100%" stopColor="rgba(59, 130, 246, 0.9)" />
+        </linearGradient>
+        <filter id={`glow-${id}`}>
+          <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      
+      <line
+        x1={sourceX}
+        y1={sourceY}
+        x2={targetX}
+        y2={targetY}
+        stroke={`url(#gradient-${id})`}
+        strokeWidth={selected ? 3 : 2}
+        fill="none"
+        filter={`url(#glow-${id})`}
+        className="transition-all duration-300"
+        strokeDasharray="5,5"
+        style={{
+          animation: 'dashflow 20s linear infinite',
+        }}
+      />
+    </svg>
+  );
+};
 
 interface ComposerProps {
   initialNodes: Node[];
@@ -26,7 +171,7 @@ export const Composer: React.FC<ComposerProps> = ({
   initialEdges,
   onNodesChange,
   onEdgesChange,
-  onConnect: onConnectProp, // Renamed to avoid conflict
+  onConnect: onConnectProp,
   onNodesAdd,
 }) => {
   const [nodes, setNodes, onNodesChangeInternal] = useNodesState(initialNodes);
@@ -34,12 +179,40 @@ export const Composer: React.FC<ComposerProps> = ({
   const reactFlow = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
-  const onConnectInternal = useCallback((connection: Connection) => {
-    // Add the edge internally using React Flow's addEdge helper
-    setEdges((eds) => addEdge(connection, eds));
-    // Optionally notify parent
-    onConnectProp(connection);
-  }, [setEdges, onConnectProp]);
+  const nodeTypes = useMemo(
+    () => ({
+      bridge: BridgeNode,
+      swap: SwapNode,
+      start: StartNode,
+      input: StartNode,
+      default: ({ data, selected }: any) => <StartNode data={data} selected={selected} />,
+    }),
+    []
+  );
+
+  const edgeTypes = useMemo(
+    () => ({
+      custom: CustomEdge,
+    }),
+    []
+  );
+
+  const onConnectInternal = useCallback(
+    (connection: Connection) => {
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...connection,
+            type: 'custom',
+            animated: true,
+          },
+          eds
+        )
+      );
+      onConnectProp(connection);
+    },
+    [setEdges, onConnectProp]
+  );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -49,11 +222,13 @@ export const Composer: React.FC<ComposerProps> = ({
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
+
       const bounds = reactFlowWrapper.current?.getBoundingClientRect();
       if (!bounds) return;
 
       const templateData = event.dataTransfer.getData('application/reactflow');
       const template = JSON.parse(templateData) as Node;
+
       const position = reactFlow.screenToFlowPosition({
         x: event.clientX - bounds.left,
         y: event.clientY - bounds.top,
@@ -61,44 +236,111 @@ export const Composer: React.FC<ComposerProps> = ({
 
       const newNode: Node = {
         id: `${template.id}-${+new Date()}`,
-        type: template.type || 'default',
+        type: template.id,
         position,
         data: { label: template.data.label },
-        style: { 
-          ...template.style,
-          boxShadow: '0 0 20px rgba(0, 245, 255, 0.3)',
-          transition: 'box-shadow 0.3s ease',
-        },
         params: template.params || {},
       };
 
       setNodes((nds) => nds.concat(newNode));
-      // Optionally notify parent
       onNodesAdd(newNode);
     },
-    [reactFlow, setNodes, onNodesAdd],
+    [reactFlow, setNodes, onNodesAdd]
   );
 
   return (
-    <div 
+    <div
       ref={reactFlowWrapper}
       style={{ width: '100%', height: '700px' }}
-      className="glass rounded-lg overflow-hidden shadow-2xl relative border border-neon-cyan/20"
+      className="relative rounded-2xl overflow-hidden shadow-2xl"
     >
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChangeInternal}
         onEdgesChange={onEdgesChangeInternal}
         onConnect={onConnectInternal}
         onDrop={onDrop}
         onDragOver={onDragOver}
         fitView
-        className="w-full h-full bg-gradient-to-br from-gray-900/50 to-gray-800/50 dark:from-gray-900/70 dark:to-gray-800/70"
+        className="w-full h-full"
+        style={{
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)',
+        }}
       >
-        <Controls />
-        <Background variant="dots" gap={12} size={1} color="#00f5ff" />
+        <Background
+          variant="dots"
+          gap={16}
+          size={1}
+          color="rgba(6, 182, 212, 0.2)"
+          style={{ opacity: 0.5 }}
+        />
+        <Controls
+          style={{
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            borderRadius: '12px',
+            border: '1px solid rgba(6, 182, 212, 0.3)',
+          }}
+          className="!bg-slate-950/80 !border-cyan-500/20"
+        />
       </ReactFlow>
+
+      <style>{`
+        @keyframes dashflow {
+          0% { stroke-dashoffset: 0; }
+          100% { stroke-dashoffset: -10; }
+        }
+
+        .react-flow__node {
+          background: transparent;
+          border: none;
+          padding: 0;
+        }
+
+        .react-flow__handle {
+          width: 16px !important;
+          height: 16px !important;
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.9), rgba(59, 130, 246, 0.9)) !important;
+          border: 2px solid rgba(15, 23, 42, 1) !important;
+          border-radius: 50% !important;
+          cursor: crosshair !important;
+          box-shadow: 0 0 12px rgba(6, 182, 212, 0.8) !important;
+          transition: all 0.3s ease !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+
+        .react-flow__handle:hover {
+          width: 20px !important;
+          height: 20px !important;
+          box-shadow: 0 0 20px rgba(6, 182, 212, 1), 0 0 30px rgba(59, 130, 246, 0.7) !important;
+          background: linear-gradient(135deg, rgba(6, 182, 212, 1), rgba(59, 130, 246, 1)) !important;
+        }
+
+        .react-flow__handle.connectingFrom {
+          box-shadow: 0 0 20px rgba(16, 185, 129, 0.9) !important;
+        }
+
+        .react-flow__controls {
+          gap: 4px;
+        }
+
+        .react-flow__controls button {
+          background: rgba(6, 182, 212, 0.1) !important;
+          border: 1px solid rgba(6, 182, 212, 0.3) !important;
+          border-radius: 8px !important;
+          color: rgba(6, 182, 212, 0.7) !important;
+          transition: all 0.3s;
+        }
+
+        .react-flow__controls button:hover {
+          background: rgba(6, 182, 212, 0.2) !important;
+          border-color: rgba(6, 182, 212, 0.6) !important;
+          color: rgba(6, 182, 212, 1) !important;
+        }
+      `}</style>
     </div>
   );
 };

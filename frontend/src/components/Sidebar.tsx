@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import type { Node } from '@xyflow/core';
-import { Copy, GripVertical, Send, Layers } from 'lucide-react';
+import { Send, Repeat2, Plus, X, Layers } from 'lucide-react';
 
 interface NodeTemplate extends Node {
   icon?: React.ReactNode;
@@ -8,11 +8,11 @@ interface NodeTemplate extends Node {
   category?: string;
 }
 
-const nodeTemplates: NodeTemplate[] = [
+const defaultNodeTemplates: NodeTemplate[] = [
   {
     id: 'bridge',
     data: { label: 'Bridge USDC' },
-    type: 'default',
+    type: 'bridge',
     icon: <Send className="w-4 h-4" />,
     description: 'Cross-chain token bridge',
     category: 'Bridge',
@@ -22,8 +22,8 @@ const nodeTemplates: NodeTemplate[] = [
   {
     id: 'swap',
     data: { label: 'Swap to ETH' },
-    type: 'default',
-    icon: <Send className="w-4 h-4" />,
+    type: 'swap',
+    icon: <Repeat2 className="w-4 h-4" />,
     description: 'Token exchange',
     category: 'DEX',
     style: { background: 'rgba(16, 185, 129, 0.8)', color: 'white', backdropFilter: 'blur(10px)' },
@@ -31,190 +31,206 @@ const nodeTemplates: NodeTemplate[] = [
   }
 ];
 
-const categories = Array.from(new Set(nodeTemplates.map(t => t.category)));
-
 export const Sidebar: React.FC = () => {
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(categories[0] || null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-
-  const filteredTemplates = useMemo(() => {
-    return nodeTemplates.filter(t =>
-      t.data.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery]);
-
-  const groupedTemplates = useMemo(() => {
-    return categories.reduce((acc, category) => {
-      acc[category] = filteredTemplates.filter(t => t.category === category);
-      return acc;
-    }, {} as Record<string, NodeTemplate[]>);
-  }, [filteredTemplates]);
+  const [templates, setTemplates] = useState<NodeTemplate[]>(defaultNodeTemplates);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newNodeLabel, setNewNodeLabel] = useState('');
+  const [newNodeDescription, setNewNodeDescription] = useState('');
 
   const onDragStart = (event: React.DragEvent, template: NodeTemplate) => {
     event.dataTransfer.setData('application/reactflow', JSON.stringify(template));
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      Bridge: 'from-emerald-500/20 to-cyan-500/20 border-emerald-400/30',
-      DEX: 'from-cyan-500/20 to-blue-500/20 border-cyan-400/30',
-      Yield: 'from-blue-500/20 to-purple-500/20 border-blue-400/30',
-      Security: 'from-purple-500/20 to-pink-500/20 border-purple-400/30',
+  const handleCreateNode = () => {
+    if (!newNodeLabel.trim()) return;
+
+    const newTemplate: NodeTemplate = {
+      id: `custom-${Date.now()}`,
+      data: { label: newNodeLabel },
+      type: 'default',
+      icon: <Plus className="w-4 h-4" />,
+      description: newNodeDescription || 'Custom node',
+      category: 'Custom',
+      style: {
+        background: 'rgba(139, 92, 246, 0.8)',
+        color: 'white',
+        backdropFilter: 'blur(10px)',
+      },
+      params: {},
     };
-    return colors[category] || 'from-gray-500/20 to-gray-600/20 border-gray-400/30';
+
+    setTemplates([...templates, newTemplate]);
+    setNewNodeLabel('');
+    setNewNodeDescription('');
+    setShowCreateModal(false);
   };
 
-  const getCategoryBadgeColor = (category: string) => {
-    const colors: Record<string, string> = {
-      Bridge: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30',
-      DEX: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30',
-      Yield: 'bg-blue-500/20 text-blue-300 border-blue-400/30',
-      Security: 'bg-purple-500/20 text-purple-300 border-purple-400/30',
-    };
-    return colors[category] || 'bg-gray-500/20 text-gray-300 border-gray-400/30';
+  const handleDeleteNode = (id: string) => {
+    setTemplates(templates.filter(t => t.id !== id));
   };
 
   return (
-    <aside className="w-full h-screen flex flex-col glass bg-slate-950/40 backdrop-blur-xl border-r border-white/10 overflow-hidden hover:border-white/20 transition-colors">
-      {/* Header */}
-      <div className="p-4 border-b border-white/10 bg-gradient-to-r from-slate-950/60 to-slate-900/40">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg">
-            <Layers className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="font-bold font-mono text-sm bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
-            Node Palette
-          </h3>
-        </div>
-
-        {/* Search */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search nodes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm font-mono text-gray-300 placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 focus:bg-white/10 transition-all"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      </div>
+    <aside className="w-full h-screen flex flex-col bg-slate-950/40 backdrop-blur-xl border-b border-white/10 md:border-b-0 md:border-r">
 
       {/* Node List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {categories.map((category) => (
-          groupedTemplates[category]?.length > 0 && (
-            <div key={category}>
-              {/* Category Header */}
-              <button
-                onClick={() => setExpandedCategory(expandedCategory === category ? null : category)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg mb-2 transition-all duration-300 group bg-gradient-to-r ${getCategoryColor(category)} border`}
-              >
-                <span className="text-xs font-mono font-bold text-gray-200 uppercase tracking-wider">{category}</span>
-                <span className={`text-xs font-bold transition-transform duration-300 ${expandedCategory === category ? 'rotate-180' : ''}`}>
-                  ▼
-                </span>
-              </button>
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {templates.map((template) => (
+          <div
+            key={template.id}
+            draggable
+            onDragStart={(e) => onDragStart(e, template)}
+            className="group relative cursor-move"
+          >
+            {/* Glow background on hover */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:blur-md"></div>
 
-              {/* Category Badge */}
-              {expandedCategory === category && (
-                <div className="mb-3">
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-mono border ${getCategoryBadgeColor(category)}`}>
-                    {groupedTemplates[category].length} node{groupedTemplates[category].length !== 1 ? 's' : ''}
-                  </span>
+            {/* Node Card */}
+            <div className="relative p-3 rounded-lg border border-white/10 bg-white/5 hover:border-cyan-400/50 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm shadow-sm hover:shadow-lg hover:shadow-cyan-500/20">
+              <div className="flex items-start gap-3">
+                {/* Icon */}
+                <div className="flex-shrink-0 mt-0.5 p-2 rounded-md bg-white/10 text-cyan-400 group-hover:bg-cyan-500/20 group-hover:text-cyan-300 transition-all">
+                  {template.icon}
                 </div>
-              )}
 
-              {/* Nodes */}
-              {expandedCategory === category && (
-                <div className="space-y-2 ml-2">
-                  {groupedTemplates[category].map((template) => (
-                    <div
-                      key={template.id}
-                      onMouseEnter={() => setHoveredNode(template.id)}
-                      onMouseLeave={() => setHoveredNode(null)}
-                      draggable
-                      onDragStart={(e) => onDragStart(e, template)}
-                      className="relative group cursor-move"
-                    >
-                      {/* Glow background on hover */}
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:blur-md`}
-                      ></div>
-
-                      {/* Node Card */}
-                      <div
-                        className={`relative p-3 rounded-lg border transition-all duration-300 backdrop-blur-sm ${
-                          hoveredNode === template.id
-                            ? 'border-cyan-400/50 bg-white/10 shadow-lg shadow-cyan-500/20'
-                            : 'border-white/10 bg-white/5 shadow-sm'
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          {/* Icon */}
-                          <div className="flex-shrink-0 mt-0.5 p-2 rounded-md bg-white/10 text-cyan-400 group-hover:bg-cyan-500/20 group-hover:text-cyan-300 transition-all">
-                            {template.icon}
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-mono text-sm font-semibold text-white truncate">
-                              {template.data.label}
-                            </p>
-                            <p className="font-mono text-xs text-gray-400 truncate">
-                              {template.description}
-                            </p>
-                          </div>
-
-                          {/* Drag Handle */}
-                          <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 group-hover:text-cyan-400">
-                            <GripVertical className="w-4 h-4" />
-                          </div>
-                        </div>
-
-                        {/* Drag Indicator */}
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-0 group-hover:opacity-100 rounded-t-lg transition-opacity"></div>
-                      </div>
-
-                      {/* Tooltip */}
-                      <div className="absolute left-full ml-2 top-0 px-3 py-2 bg-slate-900 border border-white/20 rounded-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        <p className="text-xs font-mono text-gray-200">Drag to canvas</p>
-                        <div className="absolute right-full top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900 border-l border-t border-white/20 rotate-45"></div>
-                      </div>
-                    </div>
-                  ))}
+                {/* Content */}
+                <div className="flex-1 min-w-0 flex-grow">
+                  <p className="font-mono text-sm font-semibold text-white truncate">
+                    {template.data.label}
+                  </p>
+                  <p className="font-mono text-xs text-gray-400 truncate">
+                    {template.description}
+                  </p>
                 </div>
-              )}
+
+                {/* Delete Button - only for custom nodes */}
+                {template.category === 'Custom' && (
+                  <button
+                    onClick={() => handleDeleteNode(template.id)}
+                    className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Drag Indicator */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-0 group-hover:opacity-100 rounded-t-lg transition-opacity"></div>
             </div>
-          )
+          </div>
         ))}
 
-        {filteredTemplates.length === 0 && (
+        {templates.length === 0 && (
           <div className="flex items-center justify-center h-32 text-center">
             <div>
-              <Copy className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-              <p className="text-sm font-mono text-gray-400">No nodes found</p>
+              <Layers className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+              <p className="text-sm font-mono text-gray-400">No nodes available</p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer Info */}
+      {/* Create Node Button */}
       <div className="p-4 border-t border-white/10 bg-gradient-to-r from-slate-950/60 to-slate-900/40">
-        <p className="text-xs font-mono text-gray-500 text-center">
-          Tip: Drag nodes to canvas
-        </p>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="w-full px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 hover:border-purple-400/60 hover:bg-gradient-to-r hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 hover:text-purple-200 font-mono text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Create Custom Node
+        </button>
       </div>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-white/10 rounded-xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold font-mono text-cyan-300">Create Custom Node</h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="space-y-4">
+              {/* Label Input */}
+              <div>
+                <label className="block text-sm font-mono text-gray-300 mb-2">Node Label</label>
+                <input
+                  type="text"
+                  value={newNodeLabel}
+                  onChange={(e) => setNewNodeLabel(e.target.value)}
+                  placeholder="e.g., Stake Tokens"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white font-mono placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 focus:bg-white/10 transition-all"
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateNode()}
+                />
+              </div>
+
+              {/* Description Input */}
+              <div>
+                <label className="block text-sm font-mono text-gray-300 mb-2">Description</label>
+                <input
+                  type="text"
+                  value={newNodeDescription}
+                  onChange={(e) => setNewNodeDescription(e.target.value)}
+                  placeholder="What does this node do?"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white font-mono placeholder-gray-500 focus:outline-none focus:border-cyan-400/50 focus:bg-white/10 transition-all"
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateNode()}
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 hover:text-white font-mono text-sm font-semibold transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateNode}
+                disabled={!newNodeLabel.trim()}
+                className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/50 text-white font-mono text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create
+              </button>
+            </div>
+
+            {/* Hint */}
+            <p className="text-xs font-mono text-gray-400 text-center">
+              Drag custom nodes to the canvas
+            </p>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        /* Scrollbar styling */
+        aside::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        aside::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+
+        aside::-webkit-scrollbar-thumb {
+          background: rgba(6, 182, 212, 0.3);
+          border-radius: 10px;
+          transition: background 0.3s;
+        }
+
+        aside::-webkit-scrollbar-thumb:hover {
+          background: rgba(6, 182, 212, 0.6);
+        }
+      `}</style>
     </aside>
   );
 };
