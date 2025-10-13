@@ -11,6 +11,7 @@
   "dependencies": {
     "@avail-project/nexus-core": "^0.0.1",
     "@avail-project/nexus-widgets": "^0.0.5",
+    "@fontsource/inter": "^5.2.8",
     "@reown/appkit": "^1.8.9",
     "@reown/appkit-adapter-wagmi": "^1.8.9",
     "@tailwindcss/vite": "^4.1.14",

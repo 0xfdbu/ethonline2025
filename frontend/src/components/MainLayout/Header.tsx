@@ -26,7 +26,7 @@ export default function Header() {
     item.value.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const limitedData = filteredData.slice(0, 5);
+  const limitedData = filteredData.slice(0, 2);
 
   const handleSearchChange = (e) => {
     const query = e.target.value;
