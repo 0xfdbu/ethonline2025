@@ -17,34 +17,54 @@ export const useIntentSteps = () => {
 
   // Initialize Nexus SDK on mount
   useEffect(() => {
-    if (isConnected && walletClient) {
+    console.log('useEffect trigger - isConnected:', isConnected, 'walletClient:', !!walletClient, 'address:', address);
+    if (isConnected && walletClient && address) {
       const initNexus = async () => {
         try {
           console.log('Initializing Nexus SDK...');
           const sdk = new NexusSDK({ network: 'testnet' });
-          await sdk.initialize(walletClient);
+          
+          // Convert viem walletClient to ethers provider
+          console.log('Creating ethers provider from walletClient...');
+          const ethersProvider = new ethers.BrowserProvider(walletClient.transport, 'any');
+          console.log('Ethers provider created');
+          
+          // Create EIP-1193 compatible wrapper with .request and .on
+          const eip1193Provider = {
+            request: async (args: { method: string; params?: any[] }) => {
+              return await ethersProvider.send(args.method, args.params || []);
+            },
+            on: ethersProvider.on.bind(ethersProvider),
+            removeListener: ethersProvider.removeListener.bind(ethersProvider),
+            // Add if needed: enable: () => ethersProvider.listAccounts(),
+          };
+          
+          // Initialize with the wrapped provider
+          await sdk.initialize(eip1193Provider as any);
           setNexus(sdk);
           console.log('Nexus SDK initialized successfully');
         } catch (err) {
           console.error('Nexus init failed:', err);
+          // Fallback: Set nexus to null, use local sim
         }
       };
       initNexus();
     } else {
-      console.log('Wallet not connected, skipping Nexus init');
+      console.log('Wallet not connected or missing, skipping Nexus init');
     }
-  }, [isConnected, walletClient]);
+  }, [isConnected, walletClient, address]);
 
   // Check balance before sim (optional, to avoid prompts)
   const checkBalance = useCallback(async () => {
     if (!address) return false;
     const publicClient = createPublicClient({
       chain: sepolia,
-      transport: http('https://rpc.sepolia.org'),
+      transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
     });
     const balance = await publicClient.getBalance({ address });
-    console.log('Wallet balance:', ethers.formatEther(balance), 'ETH');
-    return parseFloat(ethers.formatEther(balance)) > 0.001; // Min 0.001 ETH
+    const ethBalance = ethers.formatEther(balance);
+    console.log('Wallet balance:', ethBalance, 'ETH');
+    return parseFloat(ethBalance) > 0.001; // Min 0.001 ETH
   }, [address]);
 
   const serializeSteps = useCallback((nodes: Node[], edges: Edge[]) => {
@@ -71,6 +91,34 @@ export const useIntentSteps = () => {
     return stepMap;
   }, []);
 
+  const localGasEstimate = useCallback(async (intentSteps: IntentStep[]) => {
+    let gasTotal = 0n;
+    const latencies: number[] = [];
+
+    for (const step of intentSteps) {
+      let stepGas: bigint;
+      const startTime = Date.now();
+
+      if (step.action === 'swap') {
+        // Mock ethers gas est for fallback
+        stepGas = 200000n; // Approx Uniswap swap
+      } else if (step.action === 'bridge') {
+        stepGas = 300000n; // Approx bridge
+      } else {
+        stepGas = 21000n; // Base tx
+      }
+
+      const latency = Date.now() - startTime;
+      gasTotal += stepGas;
+      latencies.push(latency);
+    }
+
+    return {
+      gasEstimate: gasTotal.toString(),
+      latencyMs: latencies.reduce((a, b) => a + b, 0),
+    };
+  }, []);
+
   const simulateIntent = useCallback(async (nodes: Node[], edges: Edge[]) => {
     console.log('simulateIntent called with nodes:', nodes.length, 'edges:', edges.length);
     
@@ -80,9 +128,16 @@ export const useIntentSteps = () => {
       return;
     }
     if (!nexus) {
-      console.warn('Nexus not initialized yet');
-      return;
+      console.warn('Nexus not initialized yet - using local estimation fallback');
+      // Fallback local sim (ethers gas est)
+      const intentSteps = serializeSteps(nodes, edges);
+      const localSim = await localGasEstimate(intentSteps);
+      return {
+        steps: intentSteps,
+        simulation: localSim,
+      };
     }
+    console.log('Nexus ready, proceeding with simulation');
 
     // Check balance before sim
     const hasBalance = await checkBalance();

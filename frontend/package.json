@@ -23,6 +23,7 @@
     "postcss": "^8.4.47",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.4",
     "viem": "^2.38.0",
     "wagmi": "^2.18.0"
   },

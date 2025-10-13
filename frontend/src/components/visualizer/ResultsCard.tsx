@@ -1,8 +1,10 @@
+// frontend/src/components/ResultsCard.tsx
+
 import React from 'react';
-import type { SimulationResult, ForgeResult } from '../types/intent';
+import type { SimulationResult, ForgeResult } from '../../types/intent';
 
 interface ResultsCardProps {
-  result?: ForgeResult;
+  result?: ForgeResult & { error?: string }; // Extended with optional error
   onRetry: () => void;
   loading: boolean;
 }
@@ -20,6 +22,21 @@ export const ResultsCard: React.FC<ResultsCardProps> = ({ result, onRetry, loadi
   }
 
   if (!result) return null;
+
+  if (result.error) {
+    return (
+      <div className="p-6 bg-gradient-to-br from-red-900/20 to-red-500/20 rounded-xl shadow-xl border border-red-500/30">
+        <h3 className="text-lg font-bold text-white mb-4">Simulation Error</h3>
+        <p className="text-red-300 mb-4">{result.error}</p>
+        <button
+          onClick={onRetry}
+          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   const { simulation } = result;
   const gas = parseInt(simulation.gasEstimate);

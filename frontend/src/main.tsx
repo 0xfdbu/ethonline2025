@@ -1,5 +1,8 @@
+// src/main.tsx (or index.tsx)
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 import { createAppKit } from '@reown/appkit';
@@ -28,7 +31,7 @@ const appKit = createAppKit({
   projectId,
   metadata,
   features: {
-    analytics: false, // Set to false to avoid issues
+    analytics: false,
   },
 });
 
@@ -36,10 +39,12 @@ const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <WagmiProvider config={wagmiAdapter.wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </WagmiProvider>
+    <BrowserRouter>
+      <WagmiProvider config={wagmiAdapter.wagmiConfig}>
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </WagmiProvider>
+    </BrowserRouter>
   </React.StrictMode>,
 );

@@ -1,16 +1,21 @@
 // src/App.tsx
 
 import React from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { ReactFlowProvider } from '@xyflow/react';
 import { MainLayout } from './layouts/MainLayout';
+import { Visualizer } from './pages/Visualizer';
 import { Home } from './pages/Home';
-import '@xyflow/react/dist/style.css';  // Import React Flow styles globally here (fixes error)
+import '@xyflow/react/dist/style.css'; // Import React Flow styles globally
 
 function App() {
   return (
-    <ReactFlowProvider> 
+    <ReactFlowProvider>
       <MainLayout>
-        <Home />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/visualizer" element={<Visualizer />} />
+        </Routes>
       </MainLayout>
     </ReactFlowProvider>
   );
