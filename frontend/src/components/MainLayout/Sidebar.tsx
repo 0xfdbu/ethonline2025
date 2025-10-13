@@ -1,18 +1,19 @@
 // frontend/src/components/MainLayout/Sidebar.tsx
 
 import React, { useState, useRef } from 'react';
-import { Code2, Zap, Search, Github, Bitcoin } from 'lucide-react';
+import { Move, ArrowLeftRight, Shuffle, Fuel, Search, Github, Bitcoin } from 'lucide-react';
 
 export default function Sidebar() {
-  const [activeItem, setActiveItem] = useState('playground');
+  const [activeItem, setActiveItem] = useState('bridge');
   const [tooltip, setTooltip] = useState({ show: false, label: '', top: 0 });
   const itemRefs = useRef([]);
   const logoRef = useRef(null);
-  const footerRef = useRef(null);
 
   const menuItems = [
-    { id: 'playground', label: 'Playground', icon: Code2 },
-    { id: 'gasrefuel', label: 'Gas Refuel', icon: Zap },
+    { id: 'bridge', label: 'Bridge', icon: ArrowLeftRight },
+    { id: 'swap', label: 'Swap', icon: Shuffle },
+    { id: 'playground', label: 'Playground', icon: Move },
+    { id: 'gasrefuel', label: 'Gas Refuel', icon: Fuel },
     { id: 'explorer', label: 'Explorer', icon: Search },
     { id: 'github', label: 'GitHub', icon: Github },
   ];
@@ -71,20 +72,6 @@ export default function Sidebar() {
               );
             })}
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-200/30 backdrop-blur-sm bg-white/60 flex-shrink-0">
-          <button
-            ref={footerRef}
-            onMouseEnter={() => handleMouseEnter(footerRef.current, 'Connected Wallet')}
-            onMouseLeave={handleMouseLeave}
-            className="w-full flex items-center justify-center px-0 py-3 rounded-xl bg-slate-50/80 hover:bg-slate-100/80 text-slate-700 hover:text-slate-900 transition-all duration-200 border border-slate-200/30 shadow-sm shadow-slate-100/50"
-          >
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-md shadow-emerald-200/30">
-              <span className="text-white text-xs font-bold">✓</span>
-            </div>
-          </button>
         </div>
       </div>
 

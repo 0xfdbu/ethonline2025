@@ -5,7 +5,7 @@ import { Routes, Route } from 'react-router-dom';
 import { ReactFlowProvider } from '@xyflow/react';
 import { MainLayout } from './layouts/MainLayout';
 import { Visualizer } from './pages/Visualizer';
-import { Home } from './pages/Home';
+import { Bridge } from './pages/Bridge';
 import '@xyflow/react/dist/style.css'; // Import React Flow styles globally
 
 function App() {
@@ -13,7 +13,7 @@ function App() {
     <ReactFlowProvider>
       <MainLayout>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Bridge />} />
           <Route path="/visualizer" element={<Visualizer />} />
         </Routes>
       </MainLayout>

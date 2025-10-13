@@ -1,18 +1,21 @@
-// src/main.tsx (or index.tsx)
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
-import { createAppKit } from '@reown/appkit';
+import { createAppKit } from '@reown/appkit/react';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { mainnet, sepolia } from 'wagmi/chains';
+import { mainnet, sepolia } from '@reown/appkit/networks';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 
-// Create Reown AppKit
-const projectId = '23908c335a70d4fbe35271c97eb55029'; // Get from https://reown.com/appkit
+// 0. Setup queryClient
+const queryClient = new QueryClient();
+
+// 1. Get projectId from https://dashboard.reown.com
+const projectId = '23908c335a70d4fbe35271c97eb55029';
+
+// 2. Create a metadata object - optional
 const metadata = {
   name: 'Intent Composer',
   description: 'Build and simulate cross-chain intents',
@@ -20,22 +23,26 @@ const metadata = {
   icons: ['https://yourapp.com/icon.png'],
 };
 
+// 3. Set the networks
+const networks = [mainnet, sepolia];
+
+// 4. Create Wagmi Adapter
 const wagmiAdapter = new WagmiAdapter({
-  networks: [mainnet, sepolia],
+  networks,
   projectId,
+  ssr: true,
 });
 
-const appKit = createAppKit({
+// 5. Create modal
+createAppKit({
   adapters: [wagmiAdapter],
-  networks: [mainnet, sepolia],
+  networks,
   projectId,
   metadata,
   features: {
     analytics: false,
   },
 });
-
-const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
