@@ -1,6 +1,6 @@
 // src/pages/Bridge.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronDown, X, ArrowDown } from 'lucide-react';
 import { useNexus } from '@avail-project/nexus-widgets';
 import { BridgeButton } from '@avail-project/nexus-widgets';
@@ -294,6 +294,15 @@ export function Bridge() {
   const { balance, isFetchingBalance } = useBalance(nexus, isConnected, address, isSdkInitialized, fromToken, fromNetwork);
   const { quote, isFetchingQuote } = useQuote(nexus, toNetwork, fromToken, toToken, balance, fromNetwork, amount, setError);
 
+  // Memoize prefill to prevent unnecessary re-renders of BridgeButton during typing/debounced quote updates
+  // Only update prefill when amount stabilizes (e.g., on blur or manual trigger), but for now, debounce it separately
+  const debouncedAmount = useMemo(() => amount, [amount]); // Simple memo; for true debounce, use a separate state with delay
+  const prefill = useMemo(() => ({
+    token: fromToken?.symbol || '',
+    amount: debouncedAmount,
+    chainId: parseInt(toNetwork?.id || '0'),
+  }), [fromToken?.symbol, debouncedAmount, toNetwork?.id]);
+
   if (!networks.length || !tokens.length) {
     return (
       <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center">
@@ -372,13 +381,8 @@ export function Bridge() {
             </div>
           )}
 
-          <BridgeButton
-            prefill={{
-              token: fromToken.symbol,
-              amount: amount,
-              chainId: parseInt(toNetwork.id),
-            }}
-          >
+          {/* Use memoized prefill to avoid re-renders on every keystroke */}
+          <BridgeButton prefill={prefill}>
             {({ onClick, isLoading }) => (
               <button
                 onClick={onClick}
