@@ -19,7 +19,6 @@ export default function Header() {
   const isInitializingRef = useRef(false);
 
   // Initialize Nexus SDK on wallet connect/account/chain change, deinit on disconnect
-  // Always init when connected (no skipping—ensures isSdkInitialized=true post-refresh)
   useEffect(() => {
     const init = async () => {
       if (!isConnected || !connector?.getProvider || isSdkInitialized || isInitializingRef.current) {
@@ -44,7 +43,7 @@ export default function Header() {
     } else if (!isConnected && isSdkInitialized) {
       deinitializeSdk();
     }
-  }, [isConnected, connector, address, chainId, isSdkInitialized]); // Stable deps
+  }, [isConnected, connector, address, chainId, isSdkInitialized]);
 
   // Sample JSON data for search (tokens and addresses)
   const searchData = [
@@ -77,7 +76,6 @@ export default function Header() {
 
   const handleSearchBlur = () => {
     setIsSearchFocused(false);
-    // Delay hiding dropdown to allow clicking on results
     setTimeout(() => setShowDropdown(false), 200);
   };
 
@@ -96,11 +94,12 @@ export default function Header() {
       : `${baseUrl}/address/${item.address}`;
   };
 
-  // Show loading in wallet UI if initializing
   const isWalletLoading = isConnected && isInitializing;
 
   return (
-    <header className="h-16 bg-gradient-to-r from-white/60 to-white/40 backdrop-blur-3xl border-b border-white/20 flex items-center shadow-lg shadow-slate-200/20 sticky top-0 z-40 relative">
+    <header
+      className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-white/60 to-white/40 backdrop-blur-3xl border-b border-white/20 flex items-center shadow-lg shadow-slate-200/20 z-50"
+    >
       <div className="ml-20 flex-1 flex items-center justify-between px-4 lg:px-8 min-w-0">
         {/* Left: Search Bar */}
         <div className="flex-1 max-w-md relative min-w-0">
@@ -183,13 +182,8 @@ export default function Header() {
               disabled={isWalletLoading}
               className="group relative px-6 py-2.5 rounded-xl font-semibold text-sm overflow-hidden transition-all duration-300 disabled:opacity-50"
             >
-              {/* Background gradient */}
               <div className="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-800 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-gray-500/40" />
-              
-              {/* Shine effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
-              {/* Content */}
               <span className="relative text-white flex items-center gap-2">
                 {isWalletLoading ? (
                   <>
