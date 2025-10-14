@@ -1,6 +1,6 @@
 // src/components/MainLayout/Header.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { useAppKit } from '@reown/appkit/react';
 import { useAccount } from 'wagmi';
@@ -14,25 +14,29 @@ export default function Header() {
   const { open } = useAppKit();
   const { address, isConnected, connector, chainId } = useAccount();
   const { disconnect } = useDisconnect();
-  const { initializeSdk, deinitializeSdk } = useNexus();
+  const { initializeSdk, deinitializeSdk, isSdkInitialized } = useNexus();
+  const isInitializingRef = useRef(false);
 
   // Initialize Nexus SDK on wallet connect/account/chain change, deinit on disconnect
   useEffect(() => {
     const init = async () => {
-      if (isConnected && connector?.getProvider) {
+      if (isConnected && connector?.getProvider && !isSdkInitialized && !isInitializingRef.current) {
+        isInitializingRef.current = true;
         try {
           const provider = await connector.getProvider();
           await initializeSdk(provider);
         } catch (err) {
           console.error('Nexus SDK initialization failed:', err);
+        } finally {
+          isInitializingRef.current = false;
         }
-      } else if (!isConnected) {
+      } else if (!isConnected && isSdkInitialized) {
         deinitializeSdk();
       }
     };
 
     init();
-  }, [isConnected, connector, address, chainId, initializeSdk, deinitializeSdk]);
+  }, [isConnected, connector, address, chainId, isSdkInitialized]); // Removed functions from deps to prevent loop
 
   // Sample JSON data for search (tokens and addresses)
   const searchData = [

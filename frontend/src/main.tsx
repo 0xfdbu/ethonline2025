@@ -6,7 +6,7 @@ import './index.css';
 import { createAppKit } from '@reown/appkit/react';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { mainnet, sepolia } from '@reown/appkit/networks';
+import { mainnet, sepolia, baseSepolia, arbitrumSepolia, optimismSepolia, polygonAmoy } from '@reown/appkit/networks';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 
 // 0. Setup queryClient
@@ -24,7 +24,7 @@ const metadata = {
 };
 
 // 3. Set the networks
-const networks = [mainnet, sepolia];
+const networks = [mainnet, sepolia, baseSepolia, arbitrumSepolia, optimismSepolia, polygonAmoy];
 
 // 4. Create Wagmi Adapter
 const wagmiAdapter = new WagmiAdapter({
