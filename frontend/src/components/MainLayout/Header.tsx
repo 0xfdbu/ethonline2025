@@ -1,7 +1,7 @@
 // src/components/MainLayout/Header.tsx
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Loader2 } from 'lucide-react';
 import { useAppKit } from '@reown/appkit/react';
 import { useAccount } from 'wagmi';
 import { useDisconnect } from 'wagmi';
@@ -11,6 +11,7 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false); // For UX loading
   const { open } = useAppKit();
   const { address, isConnected, connector, chainId } = useAccount();
   const { disconnect } = useDisconnect();
@@ -18,25 +19,32 @@ export default function Header() {
   const isInitializingRef = useRef(false);
 
   // Initialize Nexus SDK on wallet connect/account/chain change, deinit on disconnect
+  // Always init when connected (no skipping—ensures isSdkInitialized=true post-refresh)
   useEffect(() => {
     const init = async () => {
-      if (isConnected && connector?.getProvider && !isSdkInitialized && !isInitializingRef.current) {
-        isInitializingRef.current = true;
-        try {
-          const provider = await connector.getProvider();
-          await initializeSdk(provider);
-        } catch (err) {
-          console.error('Nexus SDK initialization failed:', err);
-        } finally {
-          isInitializingRef.current = false;
-        }
-      } else if (!isConnected && isSdkInitialized) {
-        deinitializeSdk();
+      if (!isConnected || !connector?.getProvider || isSdkInitialized || isInitializingRef.current) {
+        return;
+      }
+
+      isInitializingRef.current = true;
+      setIsInitializing(true);
+      try {
+        const provider = await connector.getProvider();
+        await initializeSdk(provider);
+      } catch (err) {
+        console.error('Nexus SDK initialization failed:', err);
+      } finally {
+        isInitializingRef.current = false;
+        setIsInitializing(false);
       }
     };
 
-    init();
-  }, [isConnected, connector, address, chainId, isSdkInitialized]); // Removed functions from deps to prevent loop
+    if (isConnected) {
+      init();
+    } else if (!isConnected && isSdkInitialized) {
+      deinitializeSdk();
+    }
+  }, [isConnected, connector, address, chainId, isSdkInitialized]); // Stable deps
 
   // Sample JSON data for search (tokens and addresses)
   const searchData = [
@@ -87,6 +95,9 @@ export default function Header() {
       ? `${baseUrl}/token/${item.address}` 
       : `${baseUrl}/address/${item.address}`;
   };
+
+  // Show loading in wallet UI if initializing
+  const isWalletLoading = isConnected && isInitializing;
 
   return (
     <header className="h-16 bg-gradient-to-r from-white/60 to-white/40 backdrop-blur-3xl border-b border-white/20 flex items-center shadow-lg shadow-slate-200/20 sticky top-0 z-40 relative">
@@ -151,11 +162,17 @@ export default function Header() {
         {/* Right: Wallet Status */}
         <div className="flex items-center gap-4 ml-auto flex-shrink-0">
           {isConnected ? (
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/60 hover:bg-white/80 rounded-xl border border-slate-200/50 transition-all duration-300 cursor-pointer group">
-              <span className="text-sm font-medium text-slate-900">{`${address?.slice(0, 6)}...${address?.slice(-4)}`}</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/60 hover:bg-white/80 rounded-xl border border-slate-200/50 transition-all duration-300 cursor-pointer group relative">
+              {isWalletLoading && (
+                <Loader2 className="animate-spin text-blue-500 mr-2" size={16} />
+              )}
+              <span className="text-sm font-medium text-slate-900 truncate max-w-32">
+                {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+              </span>
               <button
                 onClick={handleDisconnect}
-                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded group-hover:bg-slate-200/50"
+                disabled={isWalletLoading}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded group-hover:bg-slate-200/50 disabled:opacity-50"
               >
                 <X size={16} />
               </button>
@@ -163,7 +180,8 @@ export default function Header() {
           ) : (
             <button
               onClick={handleConnect}
-              className="group relative px-6 py-2.5 rounded-xl font-semibold text-sm overflow-hidden transition-all duration-300"
+              disabled={isWalletLoading}
+              className="group relative px-6 py-2.5 rounded-xl font-semibold text-sm overflow-hidden transition-all duration-300 disabled:opacity-50"
             >
               {/* Background gradient */}
               <div className="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-800 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-gray-500/40" />
@@ -172,8 +190,15 @@ export default function Header() {
               <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               
               {/* Content */}
-              <span className="relative text-white">
-                Connect
+              <span className="relative text-white flex items-center gap-2">
+                {isWalletLoading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} />
+                    Connecting...
+                  </>
+                ) : (
+                  'Connect'
+                )}
               </span>
             </button>
           )}
