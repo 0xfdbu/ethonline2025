@@ -1,14 +1,38 @@
 // src/components/MainLayout/Header.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import { useAppKit } from '@reown/appkit/react';
+import { useAccount } from 'wagmi';
+import { useDisconnect } from 'wagmi';
+import { useNexus } from '@avail-project/nexus-widgets';
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const { open } = useAppKit();
+  const { address, isConnected, connector, chainId } = useAccount();
+  const { disconnect } = useDisconnect();
+  const { initializeSdk, deinitializeSdk } = useNexus();
+
+  // Initialize Nexus SDK on wallet connect/account/chain change, deinit on disconnect
+  useEffect(() => {
+    const init = async () => {
+      if (isConnected && connector?.getProvider) {
+        try {
+          const provider = await connector.getProvider();
+          await initializeSdk(provider);
+        } catch (err) {
+          console.error('Nexus SDK initialization failed:', err);
+        }
+      } else if (!isConnected) {
+        deinitializeSdk();
+      }
+    };
+
+    init();
+  }, [isConnected, connector, address, chainId, initializeSdk, deinitializeSdk]);
 
   // Sample JSON data for search (tokens and addresses)
   const searchData = [
@@ -47,6 +71,10 @@ export default function Header() {
 
   const handleConnect = () => {
     open({ view: 'Connect' });
+  };
+
+  const handleDisconnect = () => {
+    disconnect();
   };
 
   const getItemLink = (item) => {
@@ -116,23 +144,35 @@ export default function Header() {
           )}
         </div>
 
-        {/* Right: Connect Wallet Button */}
+        {/* Right: Wallet Status */}
         <div className="flex items-center gap-4 ml-auto flex-shrink-0">
-          <button
-            onClick={handleConnect}
-            className="group relative px-6 py-2.5 rounded-xl font-semibold text-sm overflow-hidden transition-all duration-300"
-          >
-            {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-800 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-gray-500/40" />
-            
-            {/* Shine effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            
-            {/* Content */}
-            <span className="relative text-white">
-              Connect
-            </span>
-          </button>
+          {isConnected ? (
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/60 hover:bg-white/80 rounded-xl border border-slate-200/50 transition-all duration-300 cursor-pointer group">
+              <span className="text-sm font-medium text-slate-900">{`${address?.slice(0, 6)}...${address?.slice(-4)}`}</span>
+              <button
+                onClick={handleDisconnect}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded group-hover:bg-slate-200/50"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleConnect}
+              className="group relative px-6 py-2.5 rounded-xl font-semibold text-sm overflow-hidden transition-all duration-300"
+            >
+              {/* Background gradient */}
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-800 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-gray-500/40" />
+              
+              {/* Shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              {/* Content */}
+              <span className="relative text-white">
+                Connect
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </header>

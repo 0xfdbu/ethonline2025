@@ -23,23 +23,23 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </div>
 
       {/* Content */}
-      <div className="relative z-0 flex flex-col min-h-screen">
-        {/* Header */}
-        <Header />
+      <NexusProvider config={{ network: 'testnet' }}>
+        <div className="relative z-0 flex flex-col min-h-screen">
+          {/* Header */}
+          <Header />
 
-        {/* Sidebar and Main content area */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar - fixed positioned */}
-          <Sidebar />
+          {/* Sidebar and Main content area */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Sidebar - fixed positioned */}
+            <Sidebar />
 
-          {/* Main content area - offset for sidebar */}
-          <main className="flex-1 w-full ml-20 p-2 lg:p-6 overflow-auto">
-            <NexusProvider config={{ network: 'testnet' }}>
+            {/* Main content area - offset for sidebar */}
+            <main className="flex-1 w-full ml-20 p-2 lg:p-6 overflow-auto">
               {children}
-            </NexusProvider>
-          </main>
+            </main>
+          </div>
         </div>
-      </div>
+      </NexusProvider>
 
       {/* Add these styles to your global CSS or Tailwind config */}
       <style>{`
