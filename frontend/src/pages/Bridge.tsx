@@ -1,6 +1,6 @@
 // src/pages/Bridge.tsx
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { ChevronDown, X, ArrowDown } from 'lucide-react';
 import { useNexus } from '@avail-project/nexus-widgets';
 import { BridgeButton } from '@avail-project/nexus-widgets';
@@ -32,6 +32,22 @@ interface Quote {
   bridgeFee: string;
   slippage: string;
 }
+
+// Inline Switch Component
+const Switch: React.FC<{ checked: boolean; onChange: () => void; label: string }> = ({ checked, onChange, label }) => (
+  <div className="flex items-center justify-between mb-4 p-3 bg-white/15 backdrop-blur-xl rounded-lg">
+    <span className="text-sm font-medium text-slate-700">{label}</span>
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="sr-only peer"
+      />
+      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+    </label>
+  </div>
+);
 
 // Inline Logo Component
 const Logo: React.FC<{ src: string; fallbackText: string; className: string }> = ({ src, fallbackText, className }) => (
@@ -86,7 +102,7 @@ const FromSection: React.FC<{
   balance,
   isConnected,
 }) => (
-  <div className="bg-slate-50/50 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-5 space-y-3">
+  <div className="bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-5 space-y-3">
     <div className="flex items-center justify-between">
       <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">You Send</span>
       <span className="text-xs text-slate-500 font-medium">
@@ -140,7 +156,7 @@ const ToSection: React.FC<{
   isFetchingQuote,
   onSelectClick,
 }) => (
-  <div className="bg-slate-50/50 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-5 space-y-3">
+  <div className="bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-5 space-y-3">
     <div className="flex items-center justify-between">
       <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">You Receive</span>
       <span className="text-xs text-slate-500 font-medium">
@@ -180,105 +196,227 @@ const ToSection: React.FC<{
 
 // Inline NetworkSelector Component
 const NetworkSelector: React.FC<{
-  selectedNetwork: Network | null;
   selectedToken: Token | null;
-  onNetworkSelect: (network: Network) => void;
   onTokenSelect: (token: Token) => void;
+  selectedNetworks: Network[];
+  onNetworksChange: (networks: Network[]) => void;
   title: string;
   onClose: () => void;
+  isSource?: boolean;
+  mode?: 'unchained' | 'chained';
+  onModeChange?: () => void;
+  unifiedBreakdown: Record<string, Record<number, number>>;
+  isFetchingBalances: boolean;
+  tokens: Token[];
+  networks: Network[];
 }> = ({
-  selectedNetwork,
   selectedToken,
-  onNetworkSelect,
   onTokenSelect,
+  selectedNetworks,
+  onNetworksChange,
   title,
   onClose,
-}) => (
-  <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div className="bg-gradient-to-br from-white/95 to-white/80 backdrop-blur-2xl rounded-3xl p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-bold text-slate-900">{title}</h3>
-        <button 
-          onClick={onClose} 
-          className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-white/50 rounded-lg cursor-pointer"
-        >
-          <X size={24} />
-        </button>
-      </div>
+  isSource = false,
+  mode = 'unchained',
+  onModeChange,
+  unifiedBreakdown,
+  isFetchingBalances,
+  tokens,
+  networks,
+}) => {
+  const isChainedSource = isSource && mode === 'chained';
+  const [tempSelected, setTempSelected] = useState<Network[]>(selectedNetworks);
 
-      <div className="space-y-6">
-        {/* Networks */}
-        <div>
-          <div className="grid grid-cols-2 gap-3">
-            {networks.map(net => (
-              <button
-                key={net.id}
-                onClick={() => {
-                  onNetworkSelect(net);
-                  onClose();
-                }}
-                className={`flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 cursor-pointer relative ${
-                  selectedNetwork?.id === net.id
-                    ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-400/50 shadow-lg shadow-blue-500/20'
-                    : 'border-white/20 hover:border-white/40 hover:bg-white/40'
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${net.color} flex items-center justify-center shadow-lg overflow-hidden`}>
-                  <Logo src={net.logo} fallbackText={net.icon} className="w-full h-full" />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-semibold text-slate-900">{net.name}</div>
-                  <div className="text-xs text-slate-500">ID: {net.id}</div>
-                </div>
-                {selectedNetwork?.id === net.id && (
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-white rounded-full" />
-                  </div>
+  useEffect(() => {
+    setTempSelected(selectedNetworks);
+  }, [selectedNetworks]);
+
+  const tempChainIds = tempSelected.map(n => parseInt(n.id));
+  const isUnchained = isSource && mode === 'unchained';
+
+  const handleTokenSelect = useCallback((tok: Token) => {
+    onTokenSelect(tok);
+    onClose();
+  }, [onTokenSelect, onClose]);
+
+  const handleNetworkSelectSingle = useCallback((net: Network) => {
+    onNetworksChange([net]);
+    onClose();
+  }, [onNetworksChange, onClose]);
+
+  const handleConfirm = useCallback(() => {
+    if (isChainedSource) {
+      onNetworksChange(tempSelected);
+    }
+    onClose();
+  }, [isChainedSource, tempSelected, onNetworksChange, onClose]);
+
+  const handleNetworkToggle = useCallback((net: Network) => {
+    setTempSelected(prev => 
+      prev.some(n => n.id === net.id)
+        ? prev.filter(n => n.id !== net.id)
+        : [...prev, net]
+    );
+  }, []);
+
+  const handleModeToggle = useCallback(() => {
+    onModeChange?.();
+  }, [onModeChange]);
+
+  return (
+    <div className="fixed inset-0 bg-white/15 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-br rounded-3xl p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-slate-900">{title}</h3>
+        </div>
+
+        <div className="flex gap-8">
+          {/* Tokens - Left */}
+          <div className="w-1/2">
+            <h4 className="text-lg font-semibold mb-4 text-slate-900">Tokens</h4>
+            <div className="grid grid-cols-2 gap-3">
+              {tokens.map(tok => {
+                const isSelected = selectedToken?.id === tok.id;
+                const sym = tok.symbol;
+                const chainBalances = unifiedBreakdown[sym] || {};
+                const balanceCids = isUnchained || !isChainedSource ? [] : tempChainIds;
+                let sum = 0;
+                if (balanceCids.length === 0) {
+                  sum = Object.values(chainBalances).reduce((acc: number, bal: number) => acc + bal, 0);
+                } else {
+                  sum = balanceCids.reduce((acc: number, id: number) => acc + (chainBalances[id] || 0), 0);
+                }
+                const balanceStr = sum.toFixed(2);
+                return (
+                  <button
+                    key={tok.id}
+                    onClick={() => handleTokenSelect(tok)}
+                    className={`flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 cursor-pointer relative ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-400/50 shadow-lg shadow-blue-500/20'
+                        : 'border-white/20 hover:border-white/40 hover:bg-white/40'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center shadow-lg overflow-hidden">
+                      <Logo src={tok.logo} fallbackText={tok.icon} className="w-full h-full" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold text-slate-900">{tok.name}</div>
+                      <div className="text-xs text-slate-500">{tok.symbol}</div>
+                      <div className="text-xs text-slate-500">
+                        {isFetchingBalances ? 'Loading...' : `Unified: ${balanceStr} ${tok.symbol}`}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Networks - Right */}
+          <div className="w-1/2">
+            <h4 className="text-lg font-semibold mb-4 text-slate-900">
+              {isSource ? 'Source Chains' : 'Destination Network'}
+            </h4>
+            {isSource && onModeChange && (
+              <Switch
+                checked={mode === 'chained'}
+                onChange={handleModeToggle}
+                label="Chained Mode (Select specific chains)"
+              />
+            )}
+            {isSource && mode === 'unchained' ? (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-center">
+                <div className="text-sm font-medium text-green-700">Unchained Mode</div>
+                <div className="text-xs text-green-600 mt-1">All {networks.length} chains selected</div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {isSource ? (
+                  // Multi-select toggle buttons for source (only in chained)
+                  networks.map(net => {
+                    const isNetSelected = tempSelected.some(s => s.id === net.id);
+                    const chainId = parseInt(net.id);
+                    const chainBalance = selectedToken && unifiedBreakdown[selectedToken.symbol]?.[chainId] || 0;
+                    const balanceStr = isFetchingBalances ? 'Loading...' : `${chainBalance.toFixed(2)} ${selectedToken?.symbol || ''}`;
+                    const buttonClass = `flex items-center justify-between gap-3 p-4 rounded-xl border transition-all duration-200 cursor-pointer relative w-full ${
+                      isNetSelected
+                        ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-400/50 shadow-lg shadow-blue-500/20'
+                        : 'border-white/20 hover:border-white/40 hover:bg-white/40'
+                    }`;
+                    return (
+                      <button
+                        key={net.id}
+                        onClick={() => handleNetworkToggle(net)}
+                        className={buttonClass}
+                      >
+                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${net.color} flex items-center justify-center shadow-lg overflow-hidden flex-shrink-0`}>
+                          <Logo src={net.logo} fallbackText={net.icon} className="w-full h-full" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold text-slate-900">{net.name}</div>
+                          <div className="text-xs text-slate-500">ID: {net.id}</div>
+                          <div className="text-xs text-slate-500">{balanceStr || '--'}</div>
+                        </div>
+                      </button>
+                    );
+                  })
+                ) : (
+                  // Single select buttons for destination
+                  networks.map(net => {
+                    const isSelected = selectedNetworks[0]?.id === net.id;
+                    return (
+                      <button
+                        key={net.id}
+                        onClick={() => handleNetworkSelectSingle(net)}
+                        className={`flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 cursor-pointer relative ${
+                          isSelected
+                            ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-400/50 shadow-lg shadow-blue-500/20'
+                            : 'border-white/20 hover:border-white/40 hover:bg-white/40'
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${net.color} flex items-center justify-center shadow-lg overflow-hidden`}>
+                          <Logo src={net.logo} fallbackText={net.icon} className="w-full h-full" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold text-slate-900">{net.name}</div>
+                          <div className="text-xs text-slate-500">ID: {net.id}</div>
+                        </div>
+                      </button>
+                    );
+                  })
                 )}
-              </button>
-            ))}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="h-px bg-gradient-to-r from-white/0 via-white/30 to-white/0" />
-
-        {/* Tokens */}
-        <div>
-          <div className="grid grid-cols-2 gap-3">
-            {tokens.map(tok => (
-              <button
-                key={tok.id}
-                onClick={() => {
-                  onTokenSelect(tok);
-                  onClose();
-                }}
-                className={`flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 cursor-pointer relative ${
-                  selectedToken?.id === tok.id
-                    ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-400/50 shadow-lg shadow-blue-500/20'
-                    : 'border-white/20 hover:border-white/40 hover:bg-white/40'
-                }`}
-              >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center shadow-lg overflow-hidden">
-                  <Logo src={tok.logo} fallbackText={tok.icon} className="w-full h-full" />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-semibold text-slate-900">{tok.name}</div>
-                  <div className="text-xs text-slate-500">{tok.symbol}</div>
-                </div>
-              </button>
-            ))}
+        {isChainedSource && (
+          <div className="mt-6 pt-4 border-t border-white/20 flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-6 py-3 text-slate-600 font-medium rounded-xl border border-slate-300 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+            >
+              Confirm Selection ({tempSelected.length} chains)
+            </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Main Bridge Component (all rendered stuff here)
 export function Bridge() {
   const { sdk: nexus, isSdkInitialized } = useNexus();
   const { isConnected, address } = useAccount();
-  const [fromNetwork, setFromNetwork] = useState<Network | null>(() => networks[0] || null);
+  const [fromNetworks, setFromNetworks] = useState<Network[]>(() => networks);
   const [fromToken, setFromToken] = useState<Token | null>(() => tokens[0] || null);
   const [toNetwork, setToNetwork] = useState<Network | null>(() => {
     const fromIdx = networks.findIndex(n => n.id === (networks[0]?.id || ''));
@@ -286,22 +424,112 @@ export function Bridge() {
     return networks[toIdx] || networks[0] || null;
   });
   const [toToken, setToToken] = useState<Token | null>(() => tokens[0] || null);
+  const [mode, setMode] = useState<'unchained' | 'chained'>('unchained');
   const [amount, setAmount] = useState('');
   const [showFromModal, setShowFromModal] = useState(false);
   const [showToModal, setShowToModal] = useState(false);
   const [error, setError] = useState('');
+  const [unifiedBreakdown, setUnifiedBreakdown] = useState<Record<string, Record<number, number>>>({});
+  const [isFetchingBalances, setIsFetchingBalances] = useState(false);
 
-  const { balance, isFetchingBalance } = useBalance(nexus, isConnected, address, isSdkInitialized, fromToken, fromNetwork);
-  const { quote, isFetchingQuote } = useQuote(nexus, toNetwork, fromToken, toToken, balance, fromNetwork, amount, setError);
+  // Fetch unified breakdowns
+  useEffect(() => {
+    const fetchUnifiedBalances = async () => {
+      if (!nexus || !isSdkInitialized || !isConnected || !address || !tokens.length) {
+        return;
+      }
 
-  // Memoize prefill to prevent unnecessary re-renders of BridgeButton during typing/debounced quote updates
-  // Only update prefill when amount stabilizes (e.g., on blur or manual trigger), but for now, debounce it separately
-  const debouncedAmount = useMemo(() => amount, [amount]); // Simple memo; for true debounce, use a separate state with delay
-  const prefill = useMemo(() => ({
-    token: fromToken?.symbol || '',
-    amount: debouncedAmount,
-    chainId: parseInt(toNetwork?.id || '0'),
-  }), [fromToken?.symbol, debouncedAmount, toNetwork?.id]);
+      setIsFetchingBalances(true);
+      const newBreakdown: Record<string, Record<number, number>> = {};
+      try {
+        for (const token of tokens) {
+          const asset = await nexus.getUnifiedBalance(token.symbol);
+          const chainBalances: Record<number, number> = {};
+          if (asset?.breakdown && asset.breakdown.length > 0) {
+            for (const b of asset.breakdown) {
+              const chainId = parseInt(b.chain?.id || '0');
+              chainBalances[chainId] = Number(b.balance || 0);
+            }
+          }
+          newBreakdown[token.symbol] = chainBalances;
+        }
+        setUnifiedBreakdown(newBreakdown);
+      } catch (err: any) {
+        console.error('Error fetching unified balances:', err);
+      } finally {
+        setIsFetchingBalances(false);
+      }
+    };
+
+    fetchUnifiedBalances();
+  }, [nexus, isSdkInitialized, isConnected, address, tokens]);
+
+  const { balance: legacyBalance, isFetchingBalance: legacyIsFetching } = useBalance(
+    nexus,
+    isConnected,
+    address,
+    isSdkInitialized,
+    fromToken,
+    fromNetworks[0] || null // Fallback to first for legacy hook
+  );
+
+  // Compute total source balance from selected chains (or all if unchained)
+  const totalSourceBalance = useMemo(() => {
+    if (!fromToken?.symbol || !unifiedBreakdown[fromToken.symbol]) return '0.00';
+    const chainBalances = unifiedBreakdown[fromToken.symbol];
+    const sourceChainIds = mode === 'unchained' ? [] : fromNetworks.map(n => parseInt(n.id));
+    let sum = 0;
+    if (sourceChainIds.length === 0) {
+      sum = Object.values(chainBalances).reduce((acc: number, bal: number) => acc + bal, 0);
+    } else {
+      sum = sourceChainIds.reduce((acc: number, id: number) => acc + (chainBalances[id] || 0), 0);
+    }
+    return sum.toFixed(2);
+  }, [fromToken?.symbol, unifiedBreakdown, mode, fromNetworks]);
+
+  const { quote, isFetchingQuote } = useQuote(
+    nexus,
+    toNetwork,
+    fromToken,
+    toToken,
+    totalSourceBalance, // Pass computed total
+    fromNetworks[0], // Pass first for hook compatibility; assume hook handles single
+    amount,
+    setError
+  );
+
+  // Memoize prefill
+  const debouncedAmount = useMemo(() => amount, [amount]);
+  const sourceChainIds = mode === 'unchained' ? [] : fromNetworks.map(n => parseInt(n.id));
+  const prefill = useMemo(() => {
+    const base = {
+      token: fromToken?.symbol || '',
+      amount: debouncedAmount,
+      chainId: parseInt(toNetwork?.id || '0'),
+    };
+    if (sourceChainIds.length > 0) {
+      return { ...base, sourceChains: sourceChainIds };
+    }
+    return base;
+  }, [fromToken?.symbol, debouncedAmount, toNetwork?.id, sourceChainIds]);
+
+  const toggleMode = useCallback(() => {
+    setMode(prev => {
+      const newMode = prev === 'unchained' ? 'chained' : 'unchained';
+      if (newMode === 'unchained') {
+        setFromNetworks(networks);
+      }
+      return newMode;
+    });
+  }, [networks]);
+
+  const handleFromNetworksChange = useCallback((newNets: Network[]) => {
+    setFromNetworks(newNets);
+  }, []);
+
+  const handleToNetworksChange = useCallback((newNets: Network[]) => {
+    setToNetwork(newNets[0] || null);
+  }, []);
 
   if (!networks.length || !tokens.length) {
     return (
@@ -316,14 +544,16 @@ export function Bridge() {
     );
   }
 
-  if (!isSdkInitialized || !fromNetwork || !toNetwork || !fromToken || !toToken) {
+  const fromFirstNetwork = fromNetworks[0] || networks[0] || null;
+
+  if (!isSdkInitialized || !fromToken || !toToken || !toNetwork || !fromNetworks.length) {
     return (
       <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center">
         <div className="text-center max-w-md">
           <h2 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-4">Initializing...</h2>
           <p className="text-slate-600 mb-6">
             SDK: {isSdkInitialized ? 'Ready' : 'Loading'} | 
-            Networks: {fromNetwork ? 'Set' : 'Loading'}
+            Networks: {toNetwork ? 'Set' : 'Loading'}
           </p>
           <div className="w-8 h-8 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin mx-auto" />
         </div>
@@ -331,14 +561,18 @@ export function Bridge() {
     );
   }
 
-  const isValidAmount = amount && parseFloat(amount) >= 0.001 && fromToken.symbol === toToken.symbol && fromNetwork.id !== toNetwork.id;
+  const isValidAmount = amount && parseFloat(amount) >= 0.001 && fromToken.symbol === toToken.symbol && 
+    (mode === 'unchained' || fromNetworks[0]?.id !== toNetwork.id);
 
   const swapNetworks = () => {
-    setFromNetwork(toNetwork);
-    setToNetwork(fromNetwork);
+    const oldToNetwork = toNetwork;
+    const oldFromFirst = fromNetworks[0] || networks[0] || null;
+    setToNetwork(oldFromFirst);
+    setFromNetworks(oldToNetwork ? [oldToNetwork] : []);
     setFromToken(toToken);
     setToToken(fromToken);
-    setQuote(null);
+    setMode('chained');
+    // Clear quote and error
     setError('');
   };
 
@@ -352,22 +586,22 @@ export function Bridge() {
           <h1 className="text-4xl lg:text-6xl font-bold text-slate-900">Swap anytime<br />anywhere</h1>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/30 p-2 relative w-full max-w-[500px]">
+        <div className="bg-white/15 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/30 p-2 relative w-full max-w-[500px]">
           <div className="relative flex flex-col space-y-2">
             <FromSection
-              fromNetwork={fromNetwork}
-              fromToken={fromToken}
+              fromNetwork={fromFirstNetwork!}
+              fromToken={fromToken!}
               amount={amount}
               onAmountChange={(e) => setAmount(e.target.value)}
               onSelectClick={handleFromSelect}
-              isFetchingBalance={isFetchingBalance}
-              balance={balance}
+              isFetchingBalance={isFetchingBalances}
+              balance={totalSourceBalance}
               isConnected={isConnected}
             />
-            <SwapButton onSwap={swapNetworks} disabled={fromNetwork.id === toNetwork.id} />
+            <SwapButton onSwap={swapNetworks} disabled={toNetwork?.id === (mode === 'unchained' ? '' : fromFirstNetwork?.id)} />
             <ToSection
-              toNetwork={toNetwork}
-              toToken={toToken}
+              toNetwork={toNetwork!}
+              toToken={toToken!}
               amount={amount}
               quote={quote}
               isFetchingQuote={isFetchingQuote}
@@ -381,7 +615,6 @@ export function Bridge() {
             </div>
           )}
 
-          {/* Use memoized prefill to avoid re-renders on every keystroke */}
           <BridgeButton prefill={prefill}>
             {({ onClick, isLoading }) => (
               <button
@@ -407,22 +640,34 @@ export function Bridge() {
 
       {showFromModal && (
         <NetworkSelector 
-          selectedNetwork={fromNetwork} 
           selectedToken={fromToken} 
-          onNetworkSelect={setFromNetwork} 
           onTokenSelect={setFromToken} 
-          title="Select Source Network & Token" 
+          selectedNetworks={fromNetworks}
+          onNetworksChange={handleFromNetworksChange}
+          title="" 
           onClose={() => setShowFromModal(false)}
+          isSource={true}
+          mode={mode}
+          onModeChange={toggleMode}
+          unifiedBreakdown={unifiedBreakdown}
+          isFetchingBalances={isFetchingBalances}
+          tokens={tokens}
+          networks={networks}
         />
       )}
       {showToModal && (
         <NetworkSelector 
-          selectedNetwork={toNetwork} 
           selectedToken={toToken} 
-          onNetworkSelect={setToNetwork} 
           onTokenSelect={setToToken} 
+          selectedNetworks={toNetwork ? [toNetwork] : []}
+          onNetworksChange={handleToNetworksChange}
           title="Select Destination Network & Token" 
           onClose={() => setShowToModal(false)}
+          isSource={false}
+          unifiedBreakdown={unifiedBreakdown}
+          isFetchingBalances={isFetchingBalances}
+          tokens={tokens}
+          networks={networks}
         />
       )}
     </div>

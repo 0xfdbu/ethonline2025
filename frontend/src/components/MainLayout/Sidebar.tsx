@@ -33,7 +33,7 @@ export default function Sidebar() {
     <>
       {/* Sidebar */}
       <div
-        className="fixed left-0 top-0 h-screen flex flex-col backdrop-blur-2xl bg-white/80 border-r border-slate-200/50 transition-all duration-300 z-50 shadow-xl shadow-slate-100/50 w-20"
+        className="fixed left-0 top-0 h-screen flex flex-col bg-white/15 backdrop-blur-xl border-r border-slate-200/50 transition-all duration-300 z-50 shadow-xl shadow-slate-100/50 w-20"
       >
         {/* Header */}
         <div className="h-16 flex items-center justify-center border-b border-slate-200/30">
@@ -59,9 +59,9 @@ export default function Sidebar() {
                   onClick={() => setActiveItem(item.id)}
                   onMouseEnter={() => handleMouseEnter(itemRefs.current[index], item.label)}
                   onMouseLeave={handleMouseLeave}
-                  className={`group w-full flex items-center justify-center px-0 py-3 rounded-xl transition-all duration-200 backdrop-blur-sm border border-transparent cursor-pointer ${
+                  className={`group w-full flex items-center justify-center px-0 py-3 rounded-xl transition-all duration-200 backdrop-blur-xl border border-transparent cursor-pointer ${
                     activeItem === item.id
-                      ? 'bg-slate-100/80 text-slate-900 shadow-sm shadow-slate-200/50 border-slate-200/50'
+                      ? 'bg-white/15  text-slate-900 shadow-sm shadow-slate-200/50 border-slate-200/50'
                       : 'text-slate-600 hover:bg-slate-50/60 hover:text-slate-900 hover:shadow-sm hover:shadow-slate-100/50'
                   }`}
                 >

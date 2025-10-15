@@ -98,7 +98,7 @@ export default function Header() {
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-white/60 to-white/40 backdrop-blur-3xl border-b border-white/20 flex items-center shadow-lg shadow-slate-200/20 z-50"
+      className="fixed top-0 left-0 right-0 h-16 bg-white/15 backdrop-blur-xl border-b border-white/20 flex items-center shadow-lg shadow-slate-200/20 z-50"
     >
       <div className="ml-20 flex-1 flex items-center justify-between px-4 lg:px-8 min-w-0">
         {/* Left: Search Bar */}
@@ -137,7 +137,7 @@ export default function Header() {
 
           {/* Dropdown Results */}
           {showDropdown && limitedData.length > 0 && (
-            <div className="absolute top-full left-0 w-full mt-1 bg-white/90 backdrop-blur-md border border-slate-200/30 rounded-xl shadow-lg shadow-slate-200/30 max-h-60 overflow-y-auto z-50">
+            <div className="absolute top-full left-0 w-full mt-1 bg-white/15 backdrop-blur-xl border border-slate-200/30 rounded-xl shadow-lg shadow-slate-200/30 max-h-60 overflow-y-auto z-50">
               {limitedData.map((item) => (
                 <a
                   key={item.id}
