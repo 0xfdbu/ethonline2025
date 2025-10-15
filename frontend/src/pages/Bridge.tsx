@@ -7,7 +7,7 @@ import { BridgeButton } from '@avail-project/nexus-widgets';
 import { useAccount } from 'wagmi';
 import { networks, tokens } from '../utils/bridge/bridgeConstants';
 import { useBalance, useQuote } from '../utils/bridge/bridgeHooks';
-import { Visualizer } from '../components/MainLayout/Visualizer';
+import { Visualizer } from '../components/bridge/Visualizer';
 
 // Types (embedded for simplicity; move to types/ if needed)
 interface Network {
@@ -34,6 +34,13 @@ interface Quote {
   bridgeFee: string;
   slippage: string;
   allSources?: any[];
+  detailedFees?: {
+    caGas: string;
+    gasSupplied: string;
+    protocol: string;
+    solver: string;
+    total: string;
+  };
 }
 
 // Helper function to format amounts to max 6 decimals
@@ -65,7 +72,7 @@ const SwapButton: React.FC<{ onSwap: () => void; disabled: boolean }> = ({ onSwa
   <button
     onClick={onSwap}
     disabled={disabled}
-    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 p-3 rounded-xl border shadow-lg z-10 cursor-pointer transition-all ${
+    className={`p-3 rounded-xl border shadow-lg cursor-pointer transition-all flex-shrink-0 ${
       disabled
         ? 'bg-gray-400 border-gray-400'
         : 'bg-black hover:bg-gray-800 border border-gray-800'
@@ -101,10 +108,10 @@ const FromSection: React.FC<{
   networks,
   selectedSourcesCount,
 }) => (
-  <div className="bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-5 space-y-3">
+  <div className="flex-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4 space-y-3 min-w-0">
     <div className="flex items-center justify-between">
       <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">You Send</span>
-      <span className="text-xs text-slate-500 font-medium">
+      <span className="text-xs text-slate-500 font-medium truncate">
         {isFetchingBalance ? (
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin" />
@@ -118,7 +125,7 @@ const FromSection: React.FC<{
       </span>
     </div>
     <div className="flex justify-between items-center gap-3">
-      <div className="max-w-[200px] bg-slate-100/50 text-4xl font-bold text-slate-900 rounded-lg p-2 text-center">
+      <div className="max-w-[150px] bg-slate-100/50 text-3xl font-bold text-slate-900 rounded-lg p-2 text-center">
         {isFetchingQuote ? (
           <div className="text-slate-400">--</div>
         ) : quote ? (
@@ -129,13 +136,13 @@ const FromSection: React.FC<{
       </div>
       <button
         onClick={onSelectClick}
-        className="flex items-center gap-2 px-4 py-3 bg-white/60 hover:bg-white/90 border border-slate-200/50 rounded-xl transition-all whitespace-nowrap cursor-pointer"
+        className="flex items-center gap-2 px-3 py-2 bg-white/60 hover:bg-white/90 border border-slate-200/50 rounded-xl transition-all whitespace-nowrap cursor-pointer"
       >
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center shadow-lg overflow-hidden">
+        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center shadow-lg overflow-hidden">
           <Logo src={fromToken.logo} fallbackText={fromToken.icon} className="w-full h-full" />
         </div>
-        <span className="font-semibold text-slate-900">{fromToken.symbol}</span>
-        <ChevronDown size={16} className="text-slate-500" />
+        <span className="font-semibold text-slate-900 text-sm">{fromToken.symbol}</span>
+        <ChevronDown size={14} className="text-slate-500" />
       </button>
     </div>
     <div className="text-xs text-slate-500">
@@ -167,7 +174,7 @@ const ToSection: React.FC<{
   isFetchingQuote,
   onSelectClick,
 }) => (
-  <div className="bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-5 space-y-3">
+  <div className="flex-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4 space-y-3 min-w-0">
     <div className="flex items-center justify-between">
       <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">You Receive</span>
       <span className="text-xs text-slate-500 font-medium">
@@ -180,20 +187,20 @@ const ToSection: React.FC<{
         placeholder="0.00"
         value={amount}
         onChange={onAmountChange}
-        className="max-w-[200px] bg-transparent text-4xl font-bold text-slate-900 placeholder-slate-400 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="max-w-[150px] bg-transparent text-3xl font-bold text-slate-900 placeholder-slate-400 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       <button
         onClick={onSelectClick}
-        className="flex items-center gap-2 px-4 py-3 bg-white/60 hover:bg-white/90 border border-slate-200/50 rounded-xl transition-all whitespace-nowrap cursor-pointer"
+        className="flex items-center gap-2 px-3 py-2 bg-white/60 hover:bg-white/90 border border-slate-200/50 rounded-xl transition-all whitespace-nowrap cursor-pointer"
       >
-        <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${toNetwork.color} flex items-center justify-center shadow-lg overflow-hidden`}>
+        <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${toNetwork.color} flex items-center justify-center shadow-lg overflow-hidden`}>
           <Logo src={toNetwork.logo} fallbackText={toNetwork.icon} className="w-full h-full" />
         </div>
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center shadow-lg overflow-hidden">
+        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center shadow-lg overflow-hidden">
           <Logo src={toToken.logo} fallbackText={toToken.icon} className="w-full h-full" />
         </div>
-        <span className="font-semibold text-slate-900">{toToken.symbol}</span>
-        <ChevronDown size={16} className="text-slate-500" />
+        <span className="font-semibold text-slate-900 text-sm">{toToken.symbol}</span>
+        <ChevronDown size={14} className="text-slate-500" />
       </button>
     </div>
     {quote && !isFetchingQuote && (
@@ -482,17 +489,10 @@ export function Bridge() {
     setError
   );
 
-  // Update detailed fees when quote changes (assuming fees are part of simulation, but for now use defaults or extend quote)
+  // Update detailed fees when quote changes
   useEffect(() => {
-    if (quote) {
-      // Note: Extend useQuote to include full fees in quoteData if needed; for now using simulation example values
-      setDetailedFees({
-        caGas: quote.gasFee || '0.000000',
-        gasSupplied: '0',
-        protocol: '0.000005',
-        solver: '0.00000201',
-        total: quote.bridgeFee || '0.00000701'
-      });
+    if (quote && quote.detailedFees) {
+      setDetailedFees(quote.detailedFees);
     }
   }, [quote]);
 
@@ -591,66 +591,64 @@ export function Bridge() {
 
   return (
     <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center">
-      <div className="max-w-6xl mx-auto w-full flex flex-col lg:flex-row gap-8">
-        <div className="w-full lg:w-1/2 flex flex-col items-center">
-          <div className="bg-white/15 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/30 p-2 relative w-full max-w-[500px]">
-            <div className="relative flex flex-col space-y-2">
-              <FromSection
-                fromToken={fromToken!}
-                estimatedSend={quote?.input || '0'}
-                onSelectClick={handleFromSelect}
-                isFetchingBalance={isFetchingBalances}
-                balance={totalSourceBalance}
-                isConnected={isConnected}
-                quote={quote}
-                isFetchingQuote={isFetchingQuote}
-                effectiveMode={effectiveMode}
-                networks={networks}
-                selectedSourcesCount={selectedSources.length}
-              />
-              <SwapButton onSwap={swapNetworks} disabled={toNetwork?.id === fromFirstNetwork?.id} />
-              <ToSection
-                toNetwork={toNetwork!}
-                toToken={toToken!}
-                amount={amount}
-                onAmountChange={(e) => setAmount(e.target.value)}
-                quote={quote}
-                isFetchingQuote={isFetchingQuote}
-                onSelectClick={handleToSelect}
-              />
-            </div>
-
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                {error}
-              </div>
-            )}
-
-            <BridgeButton prefill={prefill}>
-              {({ onClick, isLoading }) => (
-                <button
-                  onClick={onClick}
-                  disabled={isLoading || !isValidAmount || !nexus || !isConnected}
-                  className="w-full py-4 px-6 mt-4 bg-black hover:bg-gray-800 disabled:bg-gray-400 text-white rounded-xl font-bold text-lg shadow-xl disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border border-gray-800"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Bridging...
-                    </>
-                  ) : !isValidAmount || !isConnected ? (
-                    isConnected ? 'Enter Amount' : 'Connect Wallet'
-                  ) : (
-                    'Bridge Now'
-                  )}
-                </button>
-              )}
-            </BridgeButton>
+      <div className="max-w-6xl mx-auto w-full flex flex-col gap-8">
+        <div className="w-full flex justify-center">
+          <div className="bg-white/15 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/30 p-4 flex items-center gap-4 w-full relative">
+            <FromSection
+              fromToken={fromToken!}
+              estimatedSend={quote?.input || '0'}
+              onSelectClick={handleFromSelect}
+              isFetchingBalance={isFetchingBalances}
+              balance={totalSourceBalance}
+              isConnected={isConnected}
+              quote={quote}
+              isFetchingQuote={isFetchingQuote}
+              effectiveMode={effectiveMode}
+              networks={networks}
+              selectedSourcesCount={selectedSources.length}
+            />
+            <SwapButton onSwap={swapNetworks} disabled={toNetwork?.id === fromFirstNetwork?.id} />
+            <ToSection
+              toNetwork={toNetwork!}
+              toToken={toToken!}
+              amount={amount}
+              onAmountChange={(e) => setAmount(e.target.value)}
+              quote={quote}
+              isFetchingQuote={isFetchingQuote}
+              onSelectClick={handleToSelect}
+            />
           </div>
         </div>
 
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 max-w-[700px] w-full">
+            {error}
+          </div>
+        )}
+
+        <BridgeButton prefill={prefill}>
+          {({ onClick, isLoading }) => (
+            <button
+              onClick={onClick}
+              disabled={isLoading || !isValidAmount || !nexus || !isConnected}
+              className="w-full py-4 px-6 max-w-[700px] mx-auto bg-black hover:bg-gray-800 disabled:bg-gray-400 text-white rounded-xl font-bold text-lg shadow-xl disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border border-gray-800"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Bridging...
+                </>
+              ) : !isValidAmount || !isConnected ? (
+                isConnected ? 'Enter Amount' : 'Connect Wallet'
+              ) : (
+                'Bridge Now'
+              )}
+            </button>
+          )}
+        </BridgeButton>
+
         {quote && !isFetchingQuote && quote.allSources && quote.allSources.length > 0 && (
-          <div className="w-full lg:w-1/2">
+          <div className="w-full">
             <Visualizer 
               quote={quote} 
               fromToken={fromToken!} 

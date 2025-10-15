@@ -208,6 +208,7 @@ export const useQuote = (
           const input = simulation.intent.sourcesTotal;
           const output = simulation.intent.destination.amount;
           const fees = simulation.intent.fees;
+          const sources = simulation.intent.sources || [];
           const allSources = simulation.intent.allSources || [];
           const inputNum = parseFloat(input || '0');
 
@@ -227,7 +228,15 @@ export const useQuote = (
             gasFee: parseFloat(fees.caGas || '0').toFixed(6),
             bridgeFee: parseFloat(fees.total || '0').toFixed(6),
             slippage: '0',
+            sources,
             allSources,
+            detailedFees: {
+              caGas: parseFloat(fees.caGas || '0').toFixed(6),
+              gasSupplied: parseFloat(fees.gasSupplied || '0').toFixed(6),
+              protocol: parseFloat(fees.protocol || '0').toFixed(6),
+              solver: parseFloat(fees.solver || '0').toFixed(6),
+              total: parseFloat(fees.total || '0').toFixed(6),
+            },
           };
 
           saveToCache(desiredAmount, quoteData);
@@ -269,7 +278,15 @@ export const useQuote = (
           gasFee: '0.00',
           bridgeFee: fallbackFees,
           slippage: '0',
+          sources: [],
           allSources: [],
+          detailedFees: {
+            caGas: '0.000000',
+            gasSupplied: '0',
+            protocol: '0.000005',
+            solver: '0.00000201',
+            total: fallbackFees,
+          },
         };
 
         saveToCache(desiredAmount, fallbackQuote);
