@@ -26,11 +26,12 @@ const metadata = {
 // 3. Set the networks
 const networks = [mainnet, sepolia, baseSepolia, arbitrumSepolia, optimismSepolia, polygonAmoy];
 
-// 4. Create Wagmi Adapter
+// 4. Create Wagmi Adapter (added defaultChain for testnet focus)
 const wagmiAdapter = new WagmiAdapter({
   networks,
   projectId,
   ssr: true,
+  defaultChain: sepolia, // Helps with initial chain; change to mainnet if needed
 });
 
 // 5. Create modal

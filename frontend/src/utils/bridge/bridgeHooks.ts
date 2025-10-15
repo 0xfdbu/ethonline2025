@@ -1,5 +1,6 @@
 // src/utils/bridge/bridgeHooks.ts
 
+import { SunMedium } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface CachedQuote {
@@ -74,92 +75,13 @@ export const useBalance = (
   return { balance, isFetchingBalance, error };
 };
 
-// Helper: Binary search to find max receive amount R such that sim(R).sourcesTotal <= sendAmount S
-const findMaxReceiveForSend = async (
-  nexus: any,
-  token: string,
-  sendAmountStr: string,
-  sourceChainId: number,
-  toChainId: number,
-  maxIterations = 8
-) => {
-  const sendAmount = parseFloat(sendAmountStr);
-  if (isNaN(sendAmount) || sendAmount <= 0) {
-    return { output: '0', bridgeFee: '0', allSources: [] };
-  }
-
-  let low = 0;
-  let high = sendAmount; // Max possible receive <= send
-
-  let bestValidR = 0;
-  let bestSources: any[] = [];
-
-  for (let i = 0; i < maxIterations; i++) {
-    const mid = (low + high) / 2;
-    try {
-      const simulation = await nexus.simulateBridge({
-        token,
-        amount: mid.toFixed(18),
-        chainId: toChainId,
-        sourceChains: [sourceChainId],
-      });
-
-      console.log(
-        `Binary search iteration ${i}: mid receive=${mid.toFixed(6)}, sourcesTotal=${
-          simulation.intent?.sourcesTotal || 'N/A'
-        }`
-      );
-
-      if (simulation.intent) {
-        const neededSend = parseFloat(simulation.intent.sourcesTotal || '0');
-        if (neededSend <= sendAmount) {
-          bestValidR = mid;
-          bestSources = simulation.intent.allSources || [];
-          low = mid;
-        } else {
-          high = mid;
-        }
-      } else if (simulation.success) {
-        bestValidR = mid;
-        bestSources = simulation.intent?.allSources || [];
-        low = mid;
-      } else {
-        high = mid;
-      }
-    } catch (err: any) {
-      console.log(`Binary search iteration ${i} error for mid=${mid.toFixed(6)}:`, err.message);
-      if (err.message?.includes('Insufficient')) {
-        high = mid;
-      } else {
-        console.warn('Unexpected sim error in binary search:', err);
-        high = mid;
-      }
-    }
-  }
-
-  const output = bestValidR.toFixed(6);
-  const fees = (sendAmount - bestValidR).toFixed(6);
-  console.log(
-    'Binary search complete: send=',
-    sendAmount,
-    ', receive=',
-    output,
-    ', fee=',
-    fees,
-    ', sources used=',
-    bestSources.length
-  );
-
-  return { output, bridgeFee: fees, allSources: bestSources };
-};
-
 export const useQuote = (
   nexus: any,
   toNetwork: any,
   fromToken: any,
   toToken: any,
   balance: string,
-  fromNetwork: any,
+  sourceChains: number[],
   amount: string,
   onError: (msg: string) => void
 ) => {
@@ -175,9 +97,10 @@ export const useQuote = (
 
   const getCacheKey = useCallback(
     (inputAmount: string): string => {
-      return `${fromNetwork?.id}_${toNetwork?.id}_${fromToken?.symbol}_${inputAmount}`;
+      const chainsStr = sourceChains.sort().join(',');
+      return `${toNetwork?.id}_${fromToken?.symbol}_${chainsStr}_${inputAmount}`;
     },
-    [fromNetwork?.id, toNetwork?.id, fromToken?.symbol]
+    [toNetwork?.id, fromToken?.symbol, sourceChains]
   );
 
   const getFromCache = useCallback(
@@ -211,23 +134,23 @@ export const useQuote = (
   );
 
   const fetchQuote = useCallback(
-    async (inputAmount: string) => {
+    async (desiredAmount: string) => {
       if (isFetchingRef.current) {
         console.log('Already fetching quote, skipping...');
         return;
       }
 
-      if (inputAmount === lastAmountRef.current) {
+      if (desiredAmount === lastAmountRef.current) {
         console.log('Same amount as last fetch, skipping...');
         return;
       }
 
       // Check cache first
-      const cachedQuote = getFromCache(inputAmount);
+      const cachedQuote = getFromCache(desiredAmount);
       if (cachedQuote) {
         setQuote(cachedQuote);
         setIsFetchingQuote(false);
-        lastAmountRef.current = inputAmount;
+        lastAmountRef.current = desiredAmount;
         return;
       }
 
@@ -240,28 +163,26 @@ export const useQuote = (
         return;
       }
 
-      lastAmountRef.current = inputAmount;
+      lastAmountRef.current = desiredAmount;
 
       if (
-        !inputAmount ||
-        parseFloat(inputAmount) < 0.001 ||
+        !desiredAmount ||
+        parseFloat(desiredAmount) < 0.001 ||
         !nexus ||
         fromToken?.symbol !== toToken?.symbol ||
-        fromNetwork.id === toNetwork.id
+        !toNetwork?.id
       ) {
         setQuote(null);
         setIsFetchingQuote(false);
-        if (fromNetwork.id === toNetwork.id) {
-          onError('Source and destination networks must be different.');
-        } else if (fromToken?.symbol !== toToken?.symbol) {
+        if (fromToken?.symbol !== toToken?.symbol) {
           onError('Source and destination tokens must match for bridging.');
         }
         return;
       }
 
-      const inputNum = parseFloat(inputAmount);
+      const desiredNum = parseFloat(desiredAmount);
       const balanceNum = parseFloat(balance);
-      if (inputNum > balanceNum) {
+      if (desiredNum > balanceNum) {
         onError(
           `Insufficient CA balance for ${fromToken.symbol}. CA balance: ${balance} ${fromToken.symbol}. Enter lower or fund CA.`
         );
@@ -276,28 +197,45 @@ export const useQuote = (
 
       try {
         const toChainId = parseInt(toNetwork.id);
-        const sourceChainId = parseInt(fromNetwork.id);
-        const { output, bridgeFee, allSources } = await findMaxReceiveForSend(
-          nexus,
-          fromToken.symbol,
-          inputAmount,
-          sourceChainId,
-          toChainId
-        );
+        const simulation = await nexus.simulateBridge({
+          token: fromToken.symbol,
+          amount: desiredAmount,
+          chainId: toChainId,
+          sourceChains: sourceChains.length > 0 ? sourceChains : undefined,
+        });
+        console.log(simulation);
+        if (simulation.intent) {
+          const input = simulation.intent.sourcesTotal;
+          const output = simulation.intent.destination.amount;
+          const fees = simulation.intent.fees;
+          const allSources = simulation.intent.allSources || [];
+          const inputNum = parseFloat(input || '0');
 
-        const quoteData = {
-          output,
-          gasFee: 'Included',
-          bridgeFee,
-          slippage: '0',
-          duration: 'N/A',
-          sources: allSources,
-          sourceCount: allSources?.length || 0,
-        };
+          if (inputNum > balanceNum) {
+            onError(
+              `Required send (${inputNum.toFixed(6)}) exceeds available balance (${balanceNum.toFixed(6)}) for ${fromToken.symbol}. Try a smaller amount.`
+            );
+            setQuote(null);
+            setIsFetchingQuote(false);
+            isFetchingRef.current = false;
+            return;
+          }
 
-        saveToCache(inputAmount, quoteData);
-        setQuote(quoteData);
-        lastFetchTimeRef.current = Date.now();
+          const quoteData = {
+            input,
+            output,
+            gasFee: parseFloat(fees.caGas || '0').toFixed(6),
+            bridgeFee: parseFloat(fees.total || '0').toFixed(6),
+            slippage: '0',
+            allSources,
+          };
+
+          saveToCache(desiredAmount, quoteData);
+          setQuote(quoteData);
+          lastFetchTimeRef.current = Date.now();
+        } else {
+          throw new Error('Invalid simulation response');
+        }
       } catch (err: any) {
         console.error('Quote fetch error:', err);
         let errorMessage = 'Failed to fetch quote. Please try again.';
@@ -322,20 +260,19 @@ export const useQuote = (
         onError(errorMessage);
 
         // Fallback quote
-        const sendAmount = parseFloat(inputAmount);
-        const fallbackOutput = (sendAmount * 0.993).toFixed(6);
-        const fallbackFees = (sendAmount - parseFloat(fallbackOutput)).toFixed(6);
+        const fallbackInput = (desiredNum * 1.007).toFixed(6);
+        const fallbackOutput = desiredAmount;
+        const fallbackFees = (parseFloat(fallbackInput) - desiredNum).toFixed(6);
         const fallbackQuote = {
+          input: fallbackInput,
           output: fallbackOutput,
-          gasFee: 'Included',
+          gasFee: '0.00',
           bridgeFee: fallbackFees,
           slippage: '0',
-          duration: 'N/A',
-          sources: [],
-          sourceCount: 0,
+          allSources: [],
         };
 
-        saveToCache(inputAmount, fallbackQuote);
+        saveToCache(desiredAmount, fallbackQuote);
         setQuote(fallbackQuote);
         lastFetchTimeRef.current = Date.now();
       } finally {
@@ -343,7 +280,7 @@ export const useQuote = (
         isFetchingRef.current = false;
       }
     },
-    [nexus, toNetwork, fromToken, toToken, balance, fromNetwork, onError, getFromCache, saveToCache]
+    [nexus, toNetwork, fromToken, toToken, balance, sourceChains, onError, getFromCache, saveToCache]
   );
 
   useEffect(() => {
