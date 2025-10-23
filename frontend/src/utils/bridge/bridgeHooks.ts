@@ -83,50 +83,7 @@ export const useQuote = (
 ) => {
   const [quote, setQuote] = useState<any>(null);
   const [isFetchingQuote, setIsFetchingQuote] = useState(false);
-  const lastAmountRef = useRef<string>('');
   const isFetchingRef = useRef(false);
-  const cacheRef = useRef<Map<string, CachedQuote>>(new Map());
-  const lastFetchTimeRef = useRef<number>(0);
-  const CACHE_TTL = 15000; // 15 seconds cache
-  const MIN_FETCH_INTERVAL = 15000; // Minimum 15 seconds between fetches
-
-  const getCacheKey = useCallback(
-    (inputAmount: string): string => {
-      const chainsStr = sourceChains.sort().join(',');
-      return `${toNetwork?.id}_${fromToken?.symbol}_${chainsStr}_${inputAmount}`;
-    },
-    [toNetwork?.id, fromToken?.symbol, sourceChains]
-  );
-
-  const getFromCache = useCallback(
-    (inputAmount: string): any | null => {
-      const key = getCacheKey(inputAmount);
-      const cached = cacheRef.current.get(key);
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log('Using cached quote for amount:', inputAmount);
-        return cached.quote;
-      }
-      return null;
-    },
-    [getCacheKey]
-  );
-
-  const saveToCache = useCallback(
-    (inputAmount: string, quoteData: any) => {
-      const key = getCacheKey(inputAmount);
-      cacheRef.current.set(key, {
-        amount: inputAmount,
-        quote: quoteData,
-        timestamp: Date.now(),
-      });
-      // Keep cache size reasonable (max 20 entries)
-      if (cacheRef.current.size > 20) {
-        const firstKey = cacheRef.current.keys().next().value;
-        if (firstKey) cacheRef.current.delete(firstKey);
-      }
-    },
-    [getCacheKey]
-  );
 
   const fetchQuote = useCallback(
     async (desiredAmount: string) => {
@@ -135,32 +92,6 @@ export const useQuote = (
         console.log('Already fetching quote, skipping...');
         return;
       }
-
-      if (desiredAmount === lastAmountRef.current) {
-        console.log('Same amount as last fetch, skipping...');
-        return;
-      }
-
-      // Check cache first
-      const cachedQuote = getFromCache(desiredAmount);
-      if (cachedQuote) {
-        console.log('Quote from cache');
-        setQuote(cachedQuote);
-        setIsFetchingQuote(false);
-        lastAmountRef.current = desiredAmount;
-        return;
-      }
-
-      // Rate limiting: enforce 15-second minimum interval between fetches
-      const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
-      if (timeSinceLastFetch < MIN_FETCH_INTERVAL && lastAmountRef.current) {
-        console.log(
-          `Rate limiting: ${(MIN_FETCH_INTERVAL - timeSinceLastFetch) / 1000}s until next fetch allowed`
-        );
-        return;
-      }
-
-      lastAmountRef.current = desiredAmount;
 
       if (
         !desiredAmount ||
@@ -242,16 +173,19 @@ export const useQuote = (
             },
           };
 
-          saveToCache(desiredAmount, quoteData);
           setQuote(quoteData);
-          lastFetchTimeRef.current = Date.now();
         } else {
           throw new Error('Invalid simulation response');
         }
       } catch (err: any) {
         console.error('Quote fetch error:', err);
         let errorMessage = 'Failed to fetch quote. Please try again.';
-        if (
+        let useFallback = true;
+
+        if (err.message && err.message.includes('Token not supported')) {
+          errorMessage = 'The selected token is not supported on the destination chain. Please choose a different token or chain.';
+          useFallback = false;
+        } else if (
           err.message &&
           (err.message.includes('Insufficient balance') ||
             err.message.includes('Insufficient funds'))
@@ -269,38 +203,42 @@ export const useQuote = (
         } else {
           errorMessage = `Unexpected error: ${err.message || 'Unknown'}. Refresh and try again.`;
         }
+
         onError(errorMessage);
 
-        // Fallback quote
-        const fallbackInput = (desiredNum * 1.007).toFixed(6);
-        const fallbackOutput = desiredAmount;
-        const fallbackFees = (parseFloat(fallbackInput) - desiredNum).toFixed(6);
-        const fallbackQuote = {
-          input: fallbackInput,
-          output: fallbackOutput,
-          gasFee: '0.00',
-          bridgeFee: fallbackFees,
-          slippage: '0',
-          sources: [],
-          allSources: [],
-          detailedFees: {
-            caGas: '0.000000',
-            gasSupplied: '0',
-            protocol: '0.000005',
-            solver: '0.00000201',
-            total: fallbackFees,
-          },
-        };
+        if (useFallback) {
+          // Fallback quote
+          const fallbackInput = (desiredNum * 1.007).toFixed(6);
+          const fallbackOutput = desiredAmount;
+          const fallbackFees = (parseFloat(fallbackInput) - desiredNum).toFixed(6);
+          const fallbackQuote = {
+            input: fallbackInput,
+            output: fallbackOutput,
+            gasFee: '0.00',
+            bridgeFee: fallbackFees,
+            slippage: '0',
+            sources: [],
+            allSources: [],
+            detailedFees: {
+              caGas: '0.000000',
+              gasSupplied: '0',
+              protocol: '0.000005',
+              solver: '0.00000201',
+              total: fallbackFees,
+            },
+          };
 
-        saveToCache(desiredAmount, fallbackQuote);
-        setQuote(fallbackQuote);
-        lastFetchTimeRef.current = Date.now();
+          setQuote(fallbackQuote);
+        } else {
+          setQuote(null);
+        }
+
       } finally {
         setIsFetchingQuote(false);
         isFetchingRef.current = false;
       }
     },
-    [nexus, toNetwork, fromToken, toToken, balance, sourceChains, onError, getFromCache, saveToCache]
+    [nexus, toNetwork, fromToken, toToken, balance, sourceChains, onError]
   );
 
   return { quote, isFetchingQuote, fetchQuote };
