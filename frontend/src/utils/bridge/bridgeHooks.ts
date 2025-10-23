@@ -1,7 +1,7 @@
 // src/utils/bridge/bridgeHooks.ts
 
 import { SunMedium } from 'lucide-react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 interface CachedQuote {
   amount: string;
@@ -21,58 +21,54 @@ export const useBalance = (
   const [isFetchingBalance, setIsFetchingBalance] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const fetchBalance = async () => {
-      if (
-        !nexus ||
-        !isConnected ||
-        !address ||
-        !fromToken?.symbol ||
-        !fromNetwork?.id ||
-        !isSdkInitialized
-      ) {
-        setBalance('0.00');
-        if (!isConnected || !address) {
-          setError('Please connect your wallet to view balances.');
-        }
-        return;
+  const fetchBalance = useCallback(async () => {
+    if (
+      !nexus ||
+      !isConnected ||
+      !address ||
+      !fromToken?.symbol ||
+      !fromNetwork?.id ||
+      !isSdkInitialized
+    ) {
+      setBalance('0.00');
+      if (!isConnected || !address) {
+        setError('Please connect your wallet to view balances.');
       }
+      return;
+    }
 
-      setIsFetchingBalance(true);
-      setError('');
-      try {
-        const fromChainId = parseInt(fromNetwork.id);
-        const asset = await nexus.getUnifiedBalance(fromToken.symbol);
-        if (asset?.breakdown && asset.breakdown.length > 0) {
-          const chainBal = asset.breakdown.find(
-            (b: any) => b?.chain?.id === fromChainId
-          );
-          if (chainBal) {
-            const balNum = Number(chainBal.balance);
-            setBalance(isNaN(balNum) ? '0.00' : balNum.toFixed(2));
-            return;
-          }
+    setIsFetchingBalance(true);
+    setError('');
+    try {
+      const fromChainId = parseInt(fromNetwork.id);
+      const asset = await nexus.getUnifiedBalance(fromToken.symbol);
+      if (asset?.breakdown && asset.breakdown.length > 0) {
+        const chainBal = asset.breakdown.find(
+          (b: any) => b?.chain?.id === fromChainId
+        );
+        if (chainBal) {
+          const balNum = Number(chainBal.balance);
+          setBalance(isNaN(balNum) ? '0.00' : balNum.toFixed(2));
+          return;
         }
-        setBalance('0.00');
-      } catch (err: any) {
-        console.error('Balance fetch error:', err);
-        setBalance('0.00');
-        if (err.message?.includes('CA not initialized')) {
-          setError(
-            'Chain Abstraction account not initialized. Please ensure your wallet is connected properly.'
-          );
-        } else {
-          setError(`Failed to fetch balance: ${err.message || 'Unknown error'}`);
-        }
-      } finally {
-        setIsFetchingBalance(false);
       }
-    };
-
-    fetchBalance();
+      setBalance('0.00');
+    } catch (err: any) {
+      console.error('Balance fetch error:', err);
+      setBalance('0.00');
+      if (err.message?.includes('CA not initialized')) {
+        setError(
+          'Chain Abstraction account not initialized. Please ensure your wallet is connected properly.'
+        );
+      } else {
+        setError(`Failed to fetch balance: ${err.message || 'Unknown error'}`);
+      }
+    } finally {
+      setIsFetchingBalance(false);
+    }
   }, [nexus, isConnected, address, isSdkInitialized, fromToken, fromNetwork]);
 
-  return { balance, isFetchingBalance, error };
+  return { balance, isFetchingBalance, error, fetchBalance };
 };
 
 export const useQuote = (
@@ -87,7 +83,6 @@ export const useQuote = (
 ) => {
   const [quote, setQuote] = useState<any>(null);
   const [isFetchingQuote, setIsFetchingQuote] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const lastAmountRef = useRef<string>('');
   const isFetchingRef = useRef(false);
   const cacheRef = useRef<Map<string, CachedQuote>>(new Map());
@@ -135,6 +130,7 @@ export const useQuote = (
 
   const fetchQuote = useCallback(
     async (desiredAmount: string) => {
+      console.log('fetchQuote called with amount:', desiredAmount); // Debug log
       if (isFetchingRef.current) {
         console.log('Already fetching quote, skipping...');
         return;
@@ -148,6 +144,7 @@ export const useQuote = (
       // Check cache first
       const cachedQuote = getFromCache(desiredAmount);
       if (cachedQuote) {
+        console.log('Quote from cache');
         setQuote(cachedQuote);
         setIsFetchingQuote(false);
         lastAmountRef.current = desiredAmount;
@@ -197,13 +194,19 @@ export const useQuote = (
 
       try {
         const toChainId = parseInt(toNetwork.id);
+        console.log('Calling nexus.simulateBridge with params:', {
+          token: fromToken.symbol,
+          amount: desiredAmount,
+          chainId: toChainId,
+          sourceChains: sourceChains.length > 0 ? sourceChains : undefined,
+        }); // Debug log
         const simulation = await nexus.simulateBridge({
           token: fromToken.symbol,
           amount: desiredAmount,
           chainId: toChainId,
           sourceChains: sourceChains.length > 0 ? sourceChains : undefined,
         });
-        console.log(simulation);
+        console.log('Simulation response:', simulation);
         if (simulation.intent) {
           const input = simulation.intent.sourcesTotal;
           const output = simulation.intent.destination.amount;
@@ -300,22 +303,5 @@ export const useQuote = (
     [nexus, toNetwork, fromToken, toToken, balance, sourceChains, onError, getFromCache, saveToCache]
   );
 
-  useEffect(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-
-    // Increased debounce to 1500ms to reduce API calls
-    debounceRef.current = setTimeout(() => {
-      fetchQuote(amount);
-    }, 1500);
-
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, [amount, fetchQuote]);
-
-  return { quote, isFetchingQuote };
+  return { quote, isFetchingQuote, fetchQuote };
 };

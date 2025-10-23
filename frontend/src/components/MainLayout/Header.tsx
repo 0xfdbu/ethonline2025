@@ -83,6 +83,10 @@ export default function Header() {
     open({ view: 'Connect' });
   };
 
+  const handleAccount = () => {
+    open({ view: 'Account' });
+  };
+
   const handleDisconnect = () => {
     disconnect();
   };
@@ -165,9 +169,13 @@ export default function Header() {
               {isWalletLoading && (
                 <Loader2 className="animate-spin text-blue-500 mr-2" size={16} />
               )}
-              <span className="text-sm font-medium text-slate-900 truncate max-w-32">
+              <button
+                onClick={handleAccount}
+                disabled={isWalletLoading}
+                className="text-sm font-medium text-slate-900 truncate max-w-32 outline-none"
+              >
                 {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-              </span>
+              </button>
               <button
                 onClick={handleDisconnect}
                 disabled={isWalletLoading}

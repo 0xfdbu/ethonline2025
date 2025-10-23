@@ -1,7 +1,7 @@
 // src/providers/AppKitProvider.tsx
 import { createAppKit } from '@reown/appkit/react'
 import { WagmiProvider } from 'wagmi'
-import { arbitrum, mainnet } from '@reown/appkit/networks'
+import { arbitrum, mainnet, optimismSepolia, baseSepolia, polygonAmoy, arbitrumSepolia } from '@reown/appkit/networks'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 
@@ -9,7 +9,7 @@ import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 const queryClient = new QueryClient()
 
 // 1. Get projectId from https://dashboard.reown.com
-const projectId = 'YOUR_PROJECT_ID' // Replace with your actual project ID
+const projectId = '23908c335a70d4fbe35271c97eb55029' // Replace with your actual project ID
 
 // 2. Create a metadata object - optional
 const metadata = {
@@ -20,7 +20,7 @@ const metadata = {
 }
 
 // 3. Set the networks
-const networks = [mainnet, arbitrum]
+const networks = [mainnet, arbitrum, arbitrumSepolia, optimismSepolia, baseSepolia, polygonAmoy]
 
 // 4. Create Wagmi Adapter
 const wagmiAdapter = new WagmiAdapter({
