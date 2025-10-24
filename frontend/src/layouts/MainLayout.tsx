@@ -22,7 +22,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <div className="flex flex-1 overflow-hidden">
             <Sidebar />
             <main
-              className="flex-1 w-full overflow-auto p-2 lg:p-6"
+              className="flex-1 w-full overflow-auto p-2 lg:p-6 mt-10"
               style={{ marginLeft: window.innerWidth >= 768 ? '80px' : '0', marginBottom: window.innerWidth < 768 ? '64px' : '0' }}
             >
               {children}

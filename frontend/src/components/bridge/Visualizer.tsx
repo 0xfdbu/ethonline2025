@@ -1,6 +1,9 @@
+// src/components/bridge/Visualizer.tsx
+
 import React, { useCallback, useMemo } from 'react';
 import { DollarSign, Zap, Shield, Link, TrendingUp, ArrowRight, Play } from 'lucide-react';
 
+// ... (Interfaces: Source, Quote, Network, Token, Fees, VisualizerProps - unchanged) ...
 interface Source {
   amount: string;
   chainID: number;
@@ -49,6 +52,7 @@ interface VisualizerProps {
   isSimulating?: boolean;
 }
 
+// ... (formatAmount function - unchanged) ...
 const formatAmount = (amountStr: string): string => {
   const num = parseFloat(amountStr || '0');
   if (num === 0) return '0';
@@ -80,6 +84,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({
     return selectedSources;
   }, [selectedSources, quote.sources]);
 
+  // ... (Node Component - unchanged) ...
   const Node: React.FC<{ 
     x: number; 
     y: number; 
@@ -205,6 +210,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({
     </g>
   );
 
+  // ... (AnimatedPath Component - unchanged) ...
   const AnimatedPath: React.FC<{ 
     fromX: number; 
     fromY: number; 
@@ -291,33 +297,34 @@ export const Visualizer: React.FC<VisualizerProps> = ({
     );
   };
 
-  // Calculate positions for better layout
+
+  // ... (Calculation variables - unchanged) ...
   const sourceCount = quote.allSources?.length || 0;
   const sourceStartY = 100;
   const sourceSpacing = Math.min(100, 300 / Math.max(sourceCount - 1, 1));
   
   return (
     <div className="relative">
-      {/* Simulate Button - Positioned absolutely to ensure clickability */}
+      {/* Simulate Button - Positioned absolutely to ensure clickability, responsive position */}
       {onSimulate && (
-        <div className="absolute top-0 right-0 z-20 p-4 pt-2">
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20">
           <button
             onClick={onSimulate}
             disabled={isSimulating}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg ${
+            className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg text-xs sm:text-base ${
               isSimulating
                 ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                 : 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 hover:shadow-xl transform hover:scale-105'
             }`}
           >
-            <Play size={16} />
+            <Play size={14} />
             {isSimulating ? 'Simulating...' : 'Simulate'}
           </button>
         </div>
       )}
       
-      <div className="p-6 relative overflow-hidden">
-        {/* Animated background */}
+      <div className="p-2 sm:p-6 relative overflow-hidden">
+        {/* Animated background - unchanged */}
         <div className="absolute inset-0 opacity-[0.03]">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, cyan 1px, transparent 0)',
@@ -325,13 +332,17 @@ export const Visualizer: React.FC<VisualizerProps> = ({
           }}></div>
         </div>
         
-        {/* Gradient overlays */}
+        {/* Gradient overlays - unchanged */}
         <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
 
-        {/* Main SVG */}
-        <div className="w-full relative" style={{ height: '480px' }}>
-          <svg viewBox="0 0 1000 480" className="w-full h-full">
+        {/* Main SVG - Now horizontally scrollable on mobile */}
+        <div className="w-full relative overflow-x-auto rounded-lg bg-white/5 border border-black/5">
+          <svg 
+            viewBox="0 0 1000 480" 
+            className="h-[480px]" // Fixed height
+            style={{ minWidth: 700 }} // Minimum width to force scrollbar on mobile
+          >
             {/* Source chains (left side) */}
             {quote.allSources?.map((source: Source, i: number) => {
               const x = 100;
@@ -488,41 +499,43 @@ export const Visualizer: React.FC<VisualizerProps> = ({
           </svg>
         </div>
 
-        {/* Stats Footer */}
-        <div className="relative z-10 grid grid-cols-4 gap-4 pt-6 border-t border-black/10 mt-6">
-          <div className="bg-white/10 rounded-2xl p-4 border border-black/10 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-2">
+        {/* Stats Footer - Now responsive */}
+        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 pt-4 sm:pt-6 border-t border-black/10 mt-4 sm:mt-6">
+          
+          <div className="bg-white/10 rounded-2xl p-3 sm:p-4 border border-black/10 backdrop-blur-sm">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
               <span className="text-xs text-gray-600 font-medium">Active Sources</span>
             </div>
-            <p className="text-2xl font-bold text-black">{effectiveSelected.length}</p>
-            <p className="text-xs text-gray-500 mt-1">of {quote.allSources?.length || 0} chains</p>
+            <p className="text-xl sm:text-2xl font-bold text-black">{effectiveSelected.length}</p>
+            <p className="text-xs text-gray-500 mt-0.5 sm:mt-1">of {quote.allSources?.length || 0} chains</p>
           </div>
           
-          <div className="bg-white/10 rounded-2xl p-4 border border-black/10 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="bg-white/10 rounded-2xl p-3 sm:p-4 border border-black/10 backdrop-blur-sm">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
               <DollarSign size={12} className="text-emerald-600" />
               <span className="text-xs text-gray-600 font-medium">Protocol Fee</span>
             </div>
-            <p className="text-2xl font-bold text-black">{formatAmount(fees.protocol)}</p>
+            <p className="text-xl sm:text-2xl font-bold text-black">{formatAmount(fees.protocol)}</p>
           </div>
           
-          <div className="bg-white/10 rounded-2xl p-4 border border-black/10 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="bg-white/10 rounded-2xl p-3 sm:p-4 border border-black/10 backdrop-blur-sm">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
               <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
               <span className="text-xs text-gray-600 font-medium">Total Fees</span>
             </div>
-            <p className="text-2xl font-bold text-black">{formatAmount(fees.total)}</p>
+            <p className="text-xl sm:text-2xl font-bold text-black">{formatAmount(fees.total)}</p>
           </div>
           
-          <div className="bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-2xl p-4 border border-emerald-500/40 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-2xl p-3 sm:p-4 border border-emerald-500/40 backdrop-blur-sm">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
               <ArrowRight size={12} className="text-emerald-600" />
               <span className="text-xs text-emerald-700 font-medium">You Receive</span>
             </div>
-            <p className="text-2xl font-bold text-black">{formatAmount(quote.output)}</p>
-            <p className="text-xs text-emerald-700 mt-1">{toToken.symbol}</p>
+            <p className="text-xl sm:text-2xl font-bold text-black">{formatAmount(quote.output)}</p>
+            <p className="text-xs text-emerald-700 mt-0.5 sm:mt-1">{toToken.symbol}</p>
           </div>
+
         </div>
       </div>
     </div>
