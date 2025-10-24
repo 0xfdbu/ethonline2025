@@ -46,18 +46,6 @@ const Home: React.FC = () => {
             </p>
           </div>
 
-          {!isConnected && (
-            <div className="max-w-xl mx-auto mb-8">
-              <div className="bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-8 text-center">
-                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center shadow-sm mb-4">
-                  <Zap className="w-8 h-8 text-gray-700" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Connect Your Wallet</h3>
-                <p className="text-gray-600">Connect to start bridging across chains</p>
-              </div>
-            </div>
-          )}
-
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

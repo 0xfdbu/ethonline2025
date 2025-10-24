@@ -6,7 +6,7 @@ Hello Avail team,
 
 I'm @0xfdbu, an independent developer focused on multichain applications. For EthOnline 2025, I developed **UniVail**, a React-based frontend for intent-driven bridging powered by the Avail Nexus SDK. The application features wallet integration, bridge simulation and execution across EVM chains, an intent explorer with card-based visualization, and detailed intent views. It uses Tailwind CSS for styling, Wagmi for wallet management, and the Nexus SDK for core blockchain interactions.
 
-I reviewed the documentation comprehensively during integration, covering setup, unified balances, intent creation, and querying. The SDK provided a strong foundation, but integration revealed opportunities for enhancement. This feedback is constructive, based on delivering a functional application, and includes suggestions prioritized by impact. Supporting materials (screenshots and GIFs) are in the repo's `docs/` folder.
+I reviewed the documentation comprehensively during integration, covering setup, unified balances, intent creation, and querying. The SDK provided a strong foundation, but integration revealed opportunities for enhancement. This feedback is constructive, based on delivering a functional application, and includes suggestions prioritized by impact. Supporting materials (screenshots) are in the repo's `docs/` folder.
 
 ## Strengths of the Documentation and SDK
 
@@ -14,7 +14,7 @@ The intent-based architecture excels in simplifying cross-chain operations. Key 
 
 - **Setup and Wallet Integration**: The `useNexus` hook integrated seamlessly with AppKit and Wagmi, requiring minimal configuration (~10 minutes). Documentation clearly outlines provider handling, with the automatic initialization on connection/disconnection reducing boilerplate. See screenshot of implementation in `Header.tsx`: [docs/sdk-init.png](docs/sdk-init.png).
 
-- **Unified Balances**: The `getUnifiedBalance(symbol)` method performed reliably, enabling a portfolio dropdown in the header (limited to ETH, USDC, USDT). It efficiently aggregates across multiple chains, with the `breakdown` array ideal for total value computations. Real-time loading demo: [docs/balances-dropdown.gif](docs/balances-dropdown.gif).
+- **Unified Balances**: The `getUnifiedBalance(symbol)` method performed reliably, enabling a portfolio dropdown in the header (limited to ETH, USDC, USDT). It efficiently aggregates across multiple chains, with the `breakdown` array ideal for total value computations. See screenshot of balances dropdown: [docs/balances-dropdown.png](docs/balances-dropdown.png).
 
 - **Intent Creation and Querying**: `createIntent` and `getMyIntents` executed as expected, supporting quote simulation and execution. Pagination parameters facilitated fetching up to 20 intents, with status filtering. Documentation examples were directly applicable. Explorer grid visualization: [docs/intents-grid.png](docs/intents-grid.png).
 
@@ -39,7 +39,7 @@ While the SDK enabled a complete application, certain limitations impacted devel
      }
      ```
      Consider future extensions like subscriptions for status changes.
-   - **Supporting Material**: GIF of workaround inefficiency: [docs/intent-fetch-hack.gif](docs/intent-fetch-hack.gif).
+   - **Supporting Material**: Screenshot of workaround inefficiency: [docs/intent-fetch-hack.png](docs/intent-fetch-hack.png).
    - **Documentation Enhancement**: Introduce a "Common Queries" section with CRUD patterns for better discoverability.
 
 ### 2. **Critical: Flexible Quoting – Support Source-First Simulation**
