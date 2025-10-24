@@ -1,7 +1,7 @@
 // frontend/src/components/MainLayout/Sidebar.tsx
 
 import React, { useState, useRef } from 'react';
-import { Move, ArrowLeftRight, Shuffle, Fuel, Search, Github, Bitcoin, Home } from 'lucide-react';
+import { Move, ArrowLeftRight, Shuffle, Fuel, Search, Github, Layers, Home } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Sidebar() {
@@ -21,7 +21,7 @@ export default function Sidebar() {
   // Compute active item based on current location
   const getActiveItem = () => {
     const pathname = location.pathname;
-    if (pathname.startsWith('/intents/')) {
+    if (pathname.startsWith('/intents/') || pathname === '/explorer') {
       return 'explorer';
     } else if (pathname === '/bridge') {
       return 'bridgerefuel';
@@ -62,11 +62,11 @@ export default function Sidebar() {
         <div className="h-16 flex items-center justify-center border-b border-slate-200/30">
           <div
             ref={logoRef}
-            onMouseEnter={() => handleMouseEnter(logoRef.current, 'ChainHub')}
+            onMouseEnter={() => handleMouseEnter(logoRef.current, 'UniVail')}
             onMouseLeave={handleMouseLeave}
             className="w-8 h-8 bg-gradient-to-br from-slate-900 to-slate-700 rounded-xl shadow-md shadow-slate-300/50 flex items-center justify-center cursor-default"
           >
-            <Bitcoin size={16} className="text-white" />
+            <Layers size={16} className="text-white" />
           </div>
         </div>
 
