@@ -12,7 +12,7 @@ The intent-based architecture excels in simplifying cross-chain operations. Key 
 
   - **Setup and Wallet Integration**: The `useNexus` hook integrated seamlessly with AppKit and Wagmi, requiring minimal configuration (\~10 minutes). Documentation clearly outlines provider handling, with the automatic initialization on connection/disconnection reducing boilerplate. See screenshot of implementation in `Header.tsx`: [docs/sdk-init.png](docs/sdk-init.png).
 
-  - **Unified Balances**: The `getUnifiedBalance(symbol)` method performed reliably, enabling a portfolio dropdown in the header (limited to ETH, USDC, USDT). It efficiently aggregates across multiple chains, with the `breakdown` array ideal for total value computations. See screenshot of balances dropdown: [docs/balances-dropdown.png](docs/balances-dropdown.png).
+  - **Unified Balances**: The `getUnifiedBalance(symbol)` method performed reliably, enabling a portfolio dropdown in the header (limited to ETH, USDC, USDT). It efficiently aggregates across multiple chains, with the `breakdown` array ideal for total value computations.
 
   - **Intent Creation and Querying**: `createIntent` and `getMyIntents` executed as expected, supporting quote simulation and execution. Pagination parameters facilitated fetching up to 20 intents, with status filtering. Documentation examples were directly applicable. Explorer grid visualization: [docs/intents-grid.png](docs/intents-grid.png).
 
