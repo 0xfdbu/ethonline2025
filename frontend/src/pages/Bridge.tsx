@@ -84,7 +84,7 @@ const FromSection: React.FC<{
   isFetchingQuote,
   // ... other props
 }) => (
-  <div className="flex-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4 space-y-3 min-w-0 w-full md:w-1/2">
+  <div className="flex-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4 space-y-3 min-w-0 w-full">
     <div className="flex items-center justify-between">
       <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">You Send</span>
       <span className="text-xs text-slate-500 font-medium truncate">
@@ -135,7 +135,7 @@ const ToSection: React.FC<{
   isFetchingQuote,
   onSelectClick,
 }) => (
-  <div className="flex-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4 space-y-3 min-w-0 w-full md:w-1/2">
+  <div className="flex-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4 space-y-3 min-w-0 w-full">
     <div className="flex items-center justify-between">
       <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">You Receive</span>
       <span className="text-xs text-slate-500 font-medium">
