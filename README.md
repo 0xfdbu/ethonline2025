@@ -42,8 +42,8 @@ UniVail is a modern, intent-driven cross-chain bridging application built on the
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/univail.git
-   cd univail/frontend  # Note: Navigate to the frontend folder to run the project
+   git clone https://github.com/0xfdbu/ethonline2025.git
+   cd ethonline2025/frontend  # Note: Navigate to the frontend folder to run the project
    ```
 
 2. Install dependencies:
