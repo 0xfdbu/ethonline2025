@@ -1,22 +1,31 @@
 // frontend/src/components/MainLayout/Sidebar.tsx
 
 import React, { useState, useRef } from 'react';
-import { Move, ArrowLeftRight, Shuffle, Fuel, Search, Github, Bitcoin } from 'lucide-react';
+import { Move, ArrowLeftRight, Shuffle, Fuel, Search, Github, Bitcoin, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Sidebar() {
-  const [activeItem, setActiveItem] = useState('bridge');
+  const navigate = useNavigate();
+  const [activeItem, setActiveItem] = useState('home');
   const [tooltip, setTooltip] = useState({ show: false, label: '', top: 0 });
   const itemRefs = useRef([]);
   const logoRef = useRef(null);
 
   const menuItems = [
-    { id: 'bridge', label: 'Bridge', icon: ArrowLeftRight },
-    { id: 'swap', label: 'Swap', icon: Shuffle },
-    { id: 'playground', label: 'Playground', icon: Move },
-    { id: 'gasrefuel', label: 'Gas Refuel', icon: Fuel },
-    { id: 'explorer', label: 'Explorer', icon: Search },
-    { id: 'github', label: 'GitHub', icon: Github },
+    { id: 'home', label: 'Home', icon: Home, path: '/', external: false },
+    { id: 'bridgerefuel', label: 'Bridge & Refuel', icon: Move, path: '/bridge', external: false },
+    { id: 'explorer', label: 'Explorer', icon: Search, path: '/explorer', external: false },
+    { id: 'github', label: 'GitHub', icon: Github, path: 'https://github.com/0xfdbu/ethonline2025', external: true },
   ];
+
+  const handleNavigation = (item) => {
+    if (item.external) {
+      window.open(item.path, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(item.path);
+    }
+    setActiveItem(item.id);
+  };
 
   const handleMouseEnter = (el, label) => {
     if (el) {
@@ -56,7 +65,7 @@ export default function Sidebar() {
                 <button
                   key={item.id}
                   ref={(el) => (itemRefs.current[index] = el)}
-                  onClick={() => setActiveItem(item.id)}
+                  onClick={() => handleNavigation(item)}
                   onMouseEnter={() => handleMouseEnter(itemRefs.current[index], item.label)}
                   onMouseLeave={handleMouseLeave}
                   className={`group w-full flex items-center justify-center px-0 py-3 rounded-xl transition-all duration-200 backdrop-blur-xl border border-transparent cursor-pointer ${

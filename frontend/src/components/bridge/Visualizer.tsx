@@ -373,7 +373,8 @@ export const Visualizer: React.FC<VisualizerProps> = ({
               y={240} 
               size={80} 
               icon={Link} 
-              name="Bridge Hub" 
+              name="Nexus" 
+              amount={quote.input}
               color="#F59E0B" 
               isBridge={true}
             />

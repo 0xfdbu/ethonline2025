@@ -48,8 +48,6 @@ const parseChainId = (idStr: any): number => {
   return parseInt(str, 10);
 };
 
-const toHexChainId = (chainIdNum: number): string => `0x${chainIdNum.toString(16).padStart(6, '0')}`;
-
 const formatAmount = (amountStr: string): string => parseFloat(amountStr || '0').toFixed(6);
 
 const Logo: React.FC<{ src: string; fallbackText: string; className: string }> = ({ src, fallbackText, className }) => (
@@ -343,6 +341,7 @@ export function Bridge() {
   const [error, setError] = useState('');
   const [unifiedBreakdown, setUnifiedBreakdown] = useState<Record<string, Record<number, number>>>({});
   const [isFetchingBalances, setIsFetchingBalances] = useState(false);
+  const [balancesLoaded, setBalancesLoaded] = useState(false);
   const [selectedSources, setSelectedSources] = useState<number[]>([]);
   const [detailedFees, setDetailedFees] = useState({ caGas: '0', gasSupplied: '0', protocol: '0', solver: '0', total: '0' });
 
@@ -392,8 +391,9 @@ export function Bridge() {
   }, [switchError]);
 
   const prefill = useMemo(() => {
-    const base = { token: fromToken?.symbol || '', amount, chainId: toNetwork?.id || '0x1' };
-    return sourceChainIds.length > 0 ? { ...base, sourceChains: sourceChainIds.map(toHexChainId) } : base;
+    const chainIdNum = parseChainId(toNetwork?.id || '1');
+    const base = { token: fromToken?.symbol || '', amount, chainId: chainIdNum };
+    return sourceChainIds.length > 0 ? { ...base, sourceChains: sourceChainIds } : base;
   }, [fromToken?.symbol, amount, toNetwork?.id, sourceChainIds]);
 
   const handleFromTokenSelect = useCallback((tok: Token) => {
@@ -435,10 +435,19 @@ export function Bridge() {
         console.error('Error fetching unified balances:', err);
       } finally {
         setIsFetchingBalances(false);
+        setBalancesLoaded(true);
       }
     };
     fetchUnifiedBalances();
   }, [nexus, isSdkInitialized, isConnected, address, tokens]);
+
+  // Default simulation on page load after initialization and balances loaded
+  useEffect(() => {
+    if (isSdkInitialized && fromToken && toToken && toNetwork && amount === '' && balancesLoaded) {
+      setAmount('0.01');
+      fetchQuote('0.01');
+    }
+  }, [isSdkInitialized, fromToken, toToken, toNetwork, amount, balancesLoaded, fetchQuote]);
 
   if (!networks.length || !tokens.length) {
     return (
@@ -538,28 +547,34 @@ export function Bridge() {
             {isFetchingQuote ? 'Simulating...' : 'Simulate'}
           </button>
           <BridgeButton prefill={prefill}>
-            {({ onClick, isLoading }) => (
-              <button
-                onClick={onClick}
-                disabled={isLoading || !isValidAmount || !nexus || !isConnected || isFetchingQuote}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg ${
-                  isLoading || !isValidAmount || !nexus || !isConnected || isFetchingQuote
-                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 hover:shadow-xl transform hover:scale-105'
-                }`}
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Bridging...
-                  </>
-                ) : !isValidAmount || !isConnected ? (
-                  isConnected ? 'Enter Amount' : 'Connect Wallet'
-                ) : (
-                  'Bridge Now'
-                )}
-              </button>
-            )}
+            {({ onClick, isLoading }) => {
+              const handleBridgeClick = useCallback(() => {
+                console.log('Data sent to widget to execute bridge:', prefill);
+                onClick();
+              }, [onClick, prefill]);
+              return (
+                <button
+                  onClick={handleBridgeClick}
+                  disabled={isLoading || !isValidAmount || !nexus || !isConnected || isFetchingQuote}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg ${
+                    isLoading || !isValidAmount || !nexus || !isConnected || isFetchingQuote
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 hover:shadow-xl transform hover:scale-105'
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Bridging...
+                    </>
+                  ) : !isValidAmount || !isConnected ? (
+                    isConnected ? 'Enter Amount' : 'Connect Wallet'
+                  ) : (
+                    'Bridge Now'
+                  )}
+                </button>
+              );
+            }}
           </BridgeButton>
         </div>
 
