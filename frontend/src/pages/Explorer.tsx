@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNexus } from '@avail-project/nexus-widgets';
 import { useAccount } from 'wagmi';
-import { Clock, CheckCircle, XCircle, Clock as Hourglass, AlertCircle, Search } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Clock as Hourglass, AlertCircle, Search, ArrowRight, TrendingUp, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { networks } from '../utils/bridge/bridgeConstants';
 
 interface Source {
   chainID?: number;
@@ -56,6 +57,12 @@ const getTokenInfo = (tokenAddress?: string): { symbol: string; image: string; d
   return tokenMap[address] || tokenMap['0x0000000000000000000000000000000000000000'];
 };
 
+const getNetworkInfo = (chainId: number | undefined) => {
+  if (!chainId) return null;
+  const idStr = chainId.toString();
+  return networks.find(n => n.id === idStr) || null;
+};
+
 const formatDate = (timestamp: number | undefined): string => {
   if (!timestamp) return 'N/A';
   return new Date(timestamp * 1000).toLocaleDateString() + ' ' + new Date(timestamp * 1000).toLocaleTimeString();
@@ -74,28 +81,30 @@ const getStatusDisplay = (intent: Intent): string => {
   return 'FAILED';
 };
 
-const getStatusColor = (intent: Intent): string => {
-  if (intent.fulfilled) return 'green';
-  if (intent.deposited) return 'yellow';
-  if (intent.refunded) return 'blue';
-  return 'red';
+const getStatusConfig = (intent: Intent): { color: string; bg: string; icon: React.ReactNode } => {
+  if (intent.fulfilled) return {
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    icon: <CheckCircle className="w-4 h-4" />
+  };
+  if (intent.deposited) return {
+    color: 'text-amber-600',
+    bg: 'bg-amber-50',
+    icon: <Hourglass className="w-4 h-4 animate-pulse" />
+  };
+  if (intent.refunded) return {
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    icon: <ArrowRight className="w-4 h-4" />
+  };
+  return {
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+    icon: <XCircle className="w-4 h-4" />
+  };
 };
 
-const StatusIcon: React.FC<{ intent: Intent }> = ({ intent }) => {
-  const color = getStatusColor(intent);
-  switch (getStatusDisplay(intent)) {
-    case 'COMPLETED':
-      return <CheckCircle className={`w-5 h-5 text-${color}-500`} />;
-    case 'PENDING':
-      return <Hourglass className={`w-5 h-5 text-${color}-500`} />;
-    case 'REFUNDED':
-      return <ArrowRight className={`w-5 h-5 text-${color}-500`} />;
-    default:
-      return <XCircle className={`w-5 h-5 text-${color}-500`} />;
-  }
-};
-
-const IntentCard: React.FC<{ intent: Intent; onClick: () => void }> = ({ intent, onClick }) => {
+const IntentCard: React.FC<{ intent: Intent; onClick: () => void; index: number }> = ({ intent, onClick, index }) => {
   const sources = intent.sources || [];
   const destinations = intent.destinations || [];
   const tokenAddress = sources[0]?.tokenAddress;
@@ -105,52 +114,148 @@ const IntentCard: React.FC<{ intent: Intent; onClick: () => void }> = ({ intent,
 
   const sourceChainId = sources.length > 0 ? sources[0].chainID : undefined;
   const sourceCount = sources.length;
+  const sourceNetwork = getNetworkInfo(sourceChainId);
+  const destChainId = intent.destinationChainID;
+  const destNetwork = getNetworkInfo(destChainId);
+  const statusConfig = getStatusConfig(intent);
 
   return (
     <div 
-      className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6 space-y-4 cursor-pointer hover:bg-white/20 transition-colors"
+      className="group bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-6 cursor-pointer transition-all duration-300 hover:bg-white/25 hover:shadow-xl hover:border-slate-300/70"
       onClick={onClick}
+      style={{
+        animationDelay: `${index * 50}ms`,
+        animation: 'fadeInUp 0.5s ease-out forwards',
+        opacity: 0
+      }}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <StatusIcon intent={intent} />
-          <span className="text-sm font-medium text-gray-700">
-            {getStatusDisplay(intent)}
-          </span>
+      <div className="space-y-5">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${statusConfig.bg}`}>
+            <span className={statusConfig.color}>
+              {statusConfig.icon}
+            </span>
+            <span className={`text-sm font-semibold ${statusConfig.color}`}>
+              {getStatusDisplay(intent)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <Clock size={12} />
+            <span>{formatDate(intent.expiry)}</span>
+          </div>
         </div>
-        <span className="text-xs text-gray-500">
-          {formatDate(intent.expiry)}
-        </span>
-      </div>
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <span className="text-gray-500">From</span>
-          <p className="font-semibold text-gray-900">
-            {sourceChainId ? `Chain ${sourceChainId}` : 'N/A'} {sourceCount > 1 && `(+${sourceCount - 1})`}
-          </p>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* From */}
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500 font-medium">From Chain</div>
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2.5 border border-slate-200/30">
+              <div className={`w-7 h-7 rounded-lg ${sourceNetwork ? sourceNetwork.color : 'bg-gradient-to-br from-gray-100 to-gray-200'} flex items-center justify-center shadow-sm overflow-hidden`}>
+                {sourceNetwork ? (
+                  <img 
+                    src={sourceNetwork.logo} 
+                    alt={sourceNetwork.name} 
+                    className="w-full h-full rounded-lg object-cover" 
+                    onError={(e) => { 
+                      e.currentTarget.style.display = 'none'; 
+                      (e.currentTarget.parentElement as HTMLElement).innerHTML = sourceChainId || '?'; 
+                    }} 
+                  />
+                ) : (
+                  <span className="text-xs font-bold text-gray-700">{sourceChainId || '?'}</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 text-sm truncate">
+                  {sourceNetwork ? sourceNetwork.name : `Chain ${sourceChainId || 'N/A'}`}
+                </p>
+                {sourceCount > 1 && (
+                  <span className="text-xs text-gray-500">+{sourceCount - 1} more</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* To */}
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500 font-medium">To Chain</div>
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2.5 border border-slate-200/30">
+              <div className={`w-7 h-7 rounded-lg ${destNetwork ? destNetwork.color : 'bg-gradient-to-br from-gray-100 to-gray-200'} flex items-center justify-center shadow-sm overflow-hidden`}>
+                {destNetwork ? (
+                  <img 
+                    src={destNetwork.logo} 
+                    alt={destNetwork.name} 
+                    className="w-full h-full rounded-lg object-cover" 
+                    onError={(e) => { 
+                      e.currentTarget.style.display = 'none'; 
+                      (e.currentTarget.parentElement as HTMLElement).innerHTML = destChainId || '?'; 
+                    }} 
+                  />
+                ) : (
+                  <span className="text-xs font-bold text-gray-700">{destChainId || '?'}</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 text-sm truncate">
+                  {destNetwork ? destNetwork.name : `Chain ${destChainId || 'N/A'}`}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div>
-          <span className="text-gray-500">To</span>
-          <p className="font-semibold text-gray-900">{intent.destinationChainID ? `Chain ${intent.destinationChainID}` : 'N/A'}</p>
+
+        {/* Amount Flow */}
+        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-slate-200/30">
+          <div className="flex items-center justify-between">
+            {/* Send */}
+            <div className="flex items-center gap-2.5">
+              <img 
+                src={tokenInfo.image} 
+                alt={tokenInfo.symbol} 
+                className="w-9 h-9 rounded-full ring-2 ring-white/50 shadow-sm" 
+              />
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Sending</p>
+                <p className="font-bold text-gray-900 text-base">
+                  {formatBigIntAmount(totalInput, tokenInfo.decimals)} {tokenInfo.symbol}
+                </p>
+              </div>
+            </div>
+
+            {/* Arrow */}
+            <div className="flex-1 flex items-center justify-center mx-3">
+              <ArrowRight className="w-5 h-5 text-gray-400" />
+            </div>
+
+            {/* Receive */}
+            <div className="flex items-center gap-2.5">
+              <div className="text-right">
+                <p className="text-xs text-gray-500 mb-0.5">Receiving</p>
+                <p className="font-bold text-gray-900 text-base">
+                  {formatBigIntAmount(totalOutput, tokenInfo.decimals)} {tokenInfo.symbol}
+                </p>
+              </div>
+              <img 
+                src={tokenInfo.image} 
+                alt={tokenInfo.symbol} 
+                className="w-9 h-9 rounded-full ring-2 ring-white/50 shadow-sm" 
+              />
+            </div>
+          </div>
         </div>
-        <div>
-          <span className="text-gray-500">Send</span>
-          <p className="font-semibold text-gray-900 flex items-center gap-1">
-            <img src={tokenInfo.image} alt={tokenInfo.symbol} className="w-4 h-4 rounded" />
-            {formatBigIntAmount(totalInput, tokenInfo.decimals)} {tokenInfo.symbol}
-          </p>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500 font-mono">
+            <span>Intent #{intent.id || 'N/A'}</span>
+          </div>
+          <div className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors flex items-center gap-1 font-medium">
+            View Details
+            <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+          </div>
         </div>
-        <div>
-          <span className="text-gray-500">Receive</span>
-          <p className="font-semibold text-gray-900 flex items-center gap-1">
-            <img src={tokenInfo.image} alt={tokenInfo.symbol} className="w-4 h-4 rounded" />
-            {formatBigIntAmount(totalOutput, tokenInfo.decimals)} {tokenInfo.symbol}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 text-xs text-gray-500">
-        <Clock size={12} />
-        <span>ID: {intent.id || 'N/A'}</span>
       </div>
     </div>
   );
@@ -200,35 +305,53 @@ const ExplorerList: React.FC = () => {
   if (!isSdkInitialized || !isConnected) {
     return (
       <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center">
-        <div className="text-center max-w-md">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">Initializing...</h2>
-          <p className="text-gray-600 mb-6">
-            SDK: {isSdkInitialized ? 'Ready' : 'Loading'} | Wallet: {isConnected ? 'Connected' : 'Connect'}
+        <div className="text-center max-w-md bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-8">
+          <div className="mb-6">
+            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center shadow-lg">
+              <Zap className="w-8 h-8 text-gray-700" />
+            </div>
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">
+            Initializing Explorer
+          </h2>
+          <p className="text-gray-600 mb-6 text-sm">
+            SDK: <span className={isSdkInitialized ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{isSdkInitialized ? 'Ready' : 'Loading'}</span>
+            {' • '}
+            Wallet: <span className={isConnected ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{isConnected ? 'Connected' : 'Disconnected'}</span>
           </p>
-          <div className="w-8 h-8 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin mx-auto" />
+          <div className="w-10 h-10 border-3 border-gray-300 border-t-gray-700 rounded-full animate-spin mx-auto" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center mt-5 lg:mt-10">
-      <div className="max-w-4xl mx-auto w-full">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">Intent Explorer</h1>
+    <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen">
+      <div className="max-w-6xl mx-auto w-full mt-8 lg:mt-12">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-3 tracking-tight">
+            Intent Explorer
+          </h1>
+          <p className="text-gray-600 text-base">
+            Track and manage your cross-chain intents
+          </p>
+        </div>
         
         {loading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin" />
-            <span className="ml-2 text-gray-600">Loading intents...</span>
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-12 h-12 border-3 border-gray-300 border-t-gray-700 rounded-full animate-spin mb-4" />
+            <span className="text-gray-600">Fetching intents...</span>
           </div>
         )}
         
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-center mb-4">
-            {error}
+          <div className="p-5 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-center mb-6">
+            <AlertCircle className="w-6 h-6 mx-auto mb-2" />
+            <p className="mb-3 font-medium">{error}</p>
             <button
               onClick={fetchIntents}
-              className="ml-2 underline hover:text-red-700"
+              className="px-5 py-2 bg-white hover:bg-red-50 border border-red-300 rounded-xl transition-colors font-semibold text-sm"
             >
               Retry
             </button>
@@ -236,18 +359,34 @@ const ExplorerList: React.FC = () => {
         )}
         
         {!loading && intents.length === 0 && !error && (
-          <div className="text-center py-12 text-gray-600">
-            <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No intents found.</p>
+          <div className="text-center py-16 bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-10">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+              <Search className="w-8 h-8 text-gray-500" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">No Intents Found</h3>
+            <p className="text-gray-600">Create your first intent to get started</p>
           </div>
         )}
         
-        <div className="space-y-4">
-          {intents.map((intent) => (
-            <IntentCard key={intent.id} intent={intent} onClick={() => handleIntentClick(intent)} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {intents.map((intent, index) => (
+            <IntentCard key={intent.id} intent={intent} onClick={() => handleIntentClick(intent)} index={index} />
           ))}
         </div>
       </div>
+
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };
