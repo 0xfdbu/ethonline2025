@@ -24,7 +24,7 @@ export default function Sidebar() {
     if (pathname.startsWith('/intents/') || pathname === '/explorer') {
       return 'explorer';
     } else if (pathname === '/bridge') {
-      return 'bridgerefuel';
+      return 'bridge';
     } else if (pathname === '/') {
       return 'home';
     }
