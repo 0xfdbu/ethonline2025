@@ -323,7 +323,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({
         </div>
       )}
       
-      <div className="p-2 sm:p-6 relative overflow-hidden">
+      <div className="relative overflow-hidden">
         {/* Animated background - unchanged */}
         <div className="absolute inset-0 opacity-[0.03]">
           <div className="absolute inset-0" style={{
