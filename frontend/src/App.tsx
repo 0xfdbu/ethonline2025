@@ -4,6 +4,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ReactFlowProvider } from '@xyflow/react';
 import { MainLayout } from './layouts/MainLayout';
+import { Home } from './pages/Home';
 import { Bridge } from './pages/Bridge';
 import { Explorer } from './pages/Explorer';
 import { Intents } from './pages/Intents';
@@ -14,7 +15,8 @@ function App() {
     <ReactFlowProvider>
       <MainLayout>
         <Routes>
-          <Route path="/" element={<Bridge />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/bridge" element={<Bridge />} />
           <Route path="/explorer" element={<Explorer />} />
           <Route path="/intents/:id" element={<Intents />} />
         </Routes>

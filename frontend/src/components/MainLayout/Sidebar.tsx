@@ -2,11 +2,11 @@
 
 import React, { useState, useRef } from 'react';
 import { Move, ArrowLeftRight, Shuffle, Fuel, Search, Github, Bitcoin, Home } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Sidebar() {
   const navigate = useNavigate();
-  const [activeItem, setActiveItem] = useState('home');
+  const location = useLocation();
   const [tooltip, setTooltip] = useState({ show: false, label: '', top: 0 });
   const itemRefs = useRef([]);
   const logoRef = useRef(null);
@@ -18,13 +18,27 @@ export default function Sidebar() {
     { id: 'github', label: 'GitHub', icon: Github, path: 'https://github.com/0xfdbu/ethonline2025', external: true },
   ];
 
+  // Compute active item based on current location
+  const getActiveItem = () => {
+    const pathname = location.pathname;
+    if (pathname.startsWith('/intents/')) {
+      return 'explorer';
+    } else if (pathname === '/bridge') {
+      return 'bridgerefuel';
+    } else if (pathname === '/') {
+      return 'home';
+    }
+    return 'home'; // default
+  };
+
+  const activeItem = getActiveItem();
+
   const handleNavigation = (item) => {
     if (item.external) {
       window.open(item.path, '_blank', 'noopener,noreferrer');
     } else {
       navigate(item.path);
     }
-    setActiveItem(item.id);
   };
 
   const handleMouseEnter = (el, label) => {
@@ -70,7 +84,7 @@ export default function Sidebar() {
                   onMouseLeave={handleMouseLeave}
                   className={`group w-full flex items-center justify-center px-0 py-3 rounded-xl transition-all duration-200 backdrop-blur-xl border border-transparent cursor-pointer ${
                     activeItem === item.id
-                      ? 'bg-white/15  text-slate-900 shadow-sm shadow-slate-200/50 border-slate-200/50'
+                      ? 'bg-slate-900 text-white shadow-sm shadow-slate-800/50 border-slate-700/50'
                       : 'text-slate-600 hover:bg-slate-50/60 hover:text-slate-900 hover:shadow-sm hover:shadow-slate-100/50'
                   }`}
                 >

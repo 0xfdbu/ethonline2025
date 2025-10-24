@@ -1,9 +1,10 @@
 // src/pages/Intents.tsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useNexus } from '@avail-project/nexus-widgets';
-import { ArrowRight, CheckCircle, Clock as Hourglass, AlertCircle } from 'lucide-react';
+import { CheckCircle, Clock as Hourglass, AlertCircle, XCircle, ArrowRight, Clock, ChevronLeft } from 'lucide-react';
+import { networks } from '../utils/bridge/bridgeConstants';
 
 interface Source {
   chainID?: number;
@@ -55,6 +56,12 @@ const getTokenInfo = (tokenAddress?: string): { symbol: string; image: string; d
   return tokenMap[address] || tokenMap['0x0000000000000000000000000000000000000000'];
 };
 
+const getNetworkInfo = (chainId: number | undefined) => {
+  if (!chainId) return null;
+  const idStr = chainId.toString();
+  return networks.find(n => n.id === idStr) || null;
+};
+
 const formatDate = (timestamp: number | undefined): string => {
   if (!timestamp) return 'N/A';
   return new Date(timestamp * 1000).toLocaleDateString() + ' ' + new Date(timestamp * 1000).toLocaleTimeString();
@@ -73,130 +80,122 @@ const getStatusDisplay = (intent: Intent): string => {
   return 'FAILED';
 };
 
-const getStatusColor = (intent: Intent): string => {
-  if (intent.fulfilled) return 'green';
-  if (intent.deposited) return 'yellow';
-  if (intent.refunded) return 'blue';
-  return 'red';
+const getStatusConfig = (intent: Intent): { color: string; bg: string; icon: React.ReactNode } => {
+  if (intent.fulfilled) return {
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    icon: <CheckCircle className="w-4 h-4" />
+  };
+  if (intent.deposited) return {
+    color: 'text-amber-600',
+    bg: 'bg-amber-50',
+    icon: <Hourglass className="w-4 h-4 animate-pulse" />
+  };
+  if (intent.refunded) return {
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    icon: <ArrowRight className="w-4 h-4" />
+  };
+  return {
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+    icon: <XCircle className="w-4 h-4" />
+  };
 };
 
-// Simple Visualizer for Intent Status (adapted from Bridge Visualizer)
-const IntentVisualizer: React.FC<{ intent: Intent }> = ({ intent }) => {
-  const sources = intent.sources || [];
-  const destinations = intent.destinations || [];
-  const tokenAddress = sources[0]?.tokenAddress;
-  const tokenInfo = getTokenInfo(tokenAddress);
+const FromDisplay: React.FC<{
+  sources: Source[];
+  tokenInfo: { symbol: string; image: string; decimals: number };
+}> = ({
+  sources,
+  tokenInfo,
+}) => {
   const totalInput = sources.reduce((sum, src) => sum + (src.value || 0n), 0n);
-
-  // Positions similar to Bridge Visualizer
-  const sourcePositions = sources.map((src, i) => ({
-    x: 100,
-    y: 100 + i * 80,
-    chainId: src.chainID || 0,
-    amount: src.value || 0n,
-  }));
-
-  const destPosition = { 
-    x: 900, 
-    y: 240, 
-    chainId: intent.destinationChainID || 0, 
-    amount: destinations.reduce((sum, d) => sum + (d.value || 0n), 0n) 
-  };
-
-  const totalOutput = destPosition.amount;
-  const statusColor = getStatusColor(intent);
+  const primarySource = sources[0];
+  const fromNetwork = getNetworkInfo(primarySource?.chainID);
 
   return (
-    <div className="relative">
-      <div className="p-6 relative overflow-hidden">
-        {/* Gradient overlays */}
-        <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
-
-        {/* Main SVG */}
-        <div className="w-full relative" style={{ height: '480px' }}>
-          <svg viewBox="0 0 1000 480" className="w-full h-full">
-            {/* Sources */}
-            {sourcePositions.map((pos, i) => (
-              <g key={i}>
-                <circle
-                  cx={pos.x}
-                  cy={pos.y}
-                  r={30}
-                  fill={`#10B981`}
-                  stroke="#3B82F6"
-                  strokeWidth="2"
-                  filter="url(#shadow)"
-                />
-                <foreignObject x={pos.x - 15} y={pos.y - 15} width={30} height={30}>
-                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white">
-                    {pos.chainId || 'N/A'}
-                  </div>
-                </foreignObject>
-                <text x={pos.x} y={pos.y + 45} textAnchor="middle" fill="#000000" fontSize="10" fontWeight="600">
-                  {formatBigIntAmount(pos.amount, tokenInfo.decimals)} {tokenInfo.symbol}
-                </text>
-                {/* Path to bridge */}
-                <path
-                  d={`M ${pos.x + 30} ${pos.y} Q 350 240 400 240`}
-                  stroke="#10B981"
-                  strokeWidth="3"
-                  fill="none"
-                  markerEnd="url(#arrow-green)"
-                />
-              </g>
-            ))}
-
-            {/* Bridge Hub */}
-            <circle cx={400} cy={240} r={40} fill="#F59E0B" stroke="#3B82F6" strokeWidth="2" />
-            <text x={400} y={245} textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">HUB</text>
-            <text x={400} y={265} textAnchor="middle" fill="#000000" fontSize="10">
-              {formatBigIntAmount(totalInput, tokenInfo.decimals)} {tokenInfo.symbol}
-            </text>
-
-            {/* Status indicator */}
-            <circle cx={400} cy={300} r={20} fill={statusColor === 'green' ? '#10B981' : statusColor === 'yellow' ? '#F59E0B' : '#EF4444'} />
-            <text x={400} y={305} textAnchor="middle" fill="white" fontSize="8">
-              {getStatusDisplay(intent).slice(0, 3)}
-            </text>
-
-            {/* Path to destination */}
-            <path
-              d={`M 440 240 Q 700 240 850 240`}
-              stroke="#059669"
-              strokeWidth="3"
-              fill="none"
-              markerEnd="url(#arrow-blue)"
-            />
-
-            {/* Destination */}
-            <circle cx={900} cy={240} r={35} fill="#059669" stroke="#3B82F6" strokeWidth="2" />
-            <text x={900} y={245} textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">
-              {destPosition.chainId || 'N/A'}
-            </text>
-            <text x={900} y={265} textAnchor="middle" fill="#000000" fontSize="10">
-              {formatBigIntAmount(destPosition.amount, tokenInfo.decimals)} {tokenInfo.symbol}
-            </text>
-
-            {/* Arrows defs */}
-            <defs>
-              <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#10B981" />
-              </marker>
-              <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#059669" />
-              </marker>
-              <filter id="shadow">
-                <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.3" />
-              </filter>
-            </defs>
-          </svg>
+    <div className="flex-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4 space-y-3 min-w-0">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Sources</span>
+        <span className="text-xs text-slate-500 font-medium">
+          {sources.length} Chain{sources.length > 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="flex justify-between items-center gap-3">
+        <div className="text-3xl font-bold text-slate-900 rounded-lg text-center">
+          {formatBigIntAmount(totalInput, tokenInfo.decimals)}
         </div>
-
-        <div className="text-center mt-4">
-          <p className="text-gray-900">Intent #{intent.id || 'N/A'} - {getStatusDisplay(intent)}</p>
-          <p className="text-xs text-gray-600">Expiry: {formatDate(intent.expiry)}</p>
+        <div className="flex items-center gap-2 px-3 py-2 bg-white/60 hover:bg-white/90 border border-slate-200/50 rounded-xl transition-all">
+          <img 
+            src={tokenInfo.image} 
+            alt={tokenInfo.symbol} 
+            className="w-6 h-6 rounded-full shadow-lg" 
+          />
+          <span className="font-semibold text-slate-900 text-sm">{tokenInfo.symbol}</span>
         </div>
+      </div>
+      <div className="space-y-1">
+        {sources.map((src, i) => {
+          const net = getNetworkInfo(src.chainID);
+          return (
+            <div key={i} className="flex items-center justify-between text-xs text-slate-500">
+              <span className="truncate">
+                {net ? net.name : `Chain ${src.chainID}`}
+              </span>
+              <span>{formatBigIntAmount(src.value, tokenInfo.decimals)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const ToDisplay: React.FC<{
+  destinations: Destination[];
+  tokenInfo: { symbol: string; image: string; decimals: number };
+}> = ({
+  destinations,
+  tokenInfo,
+}) => {
+  const totalOutput = destinations.reduce((sum, dest) => sum + (dest.value || 0n), 0n);
+  const primaryDest = destinations[0];
+  const toNetwork = getNetworkInfo(primaryDest?.chainID);
+
+  return (
+    <div className="flex-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4 space-y-3 min-w-0">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Destinations</span>
+        <span className="text-xs text-slate-500 font-medium">
+          {destinations.length} Chain{destinations.length > 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="flex justify-between items-center gap-3">
+        <div className="text-3xl font-bold text-slate-900 rounded-lg text-center">
+          {formatBigIntAmount(totalOutput, tokenInfo.decimals)}
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2 bg-white/60 hover:bg-white/90 border border-slate-200/50 rounded-xl transition-all">
+          <img 
+            src={tokenInfo.image} 
+            alt={tokenInfo.symbol} 
+            className="w-6 h-6 rounded-full shadow-lg" 
+          />
+          <span className="font-semibold text-slate-900 text-sm">{tokenInfo.symbol}</span>
+        </div>
+      </div>
+      <div className="space-y-1">
+        {destinations.map((dest, i) => {
+          const net = getNetworkInfo(dest.chainID);
+          return (
+            <div key={i} className="flex items-center justify-between text-xs text-slate-500">
+              <span className="truncate">
+                {net ? net.name : `Chain ${dest.chainID}`}
+              </span>
+              <span>{formatBigIntAmount(dest.value, tokenInfo.decimals)}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -204,6 +203,7 @@ const IntentVisualizer: React.FC<{ intent: Intent }> = ({ intent }) => {
 
 const Intents: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { sdk: nexus, isSdkInitialized } = useNexus();
   const [intent, setIntent] = useState<Intent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -214,8 +214,6 @@ const Intents: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      // Assuming SDK has getIntentById or similar; if not, refetch list and find
-      // For now, simulate refetch of list and find
       const response = await nexus.getMyIntents({ limit: 50, offset: 0 });
       let intentList: Intent[] = [];
       if (Array.isArray(response)) {
@@ -245,10 +243,20 @@ const Intents: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center mt-5 lg:mt-10">
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin" />
-          <span className="ml-2 text-gray-600">Loading intent...</span>
+      <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center">
+        <div className="text-center max-w-md bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-8">
+          <div className="mb-6">
+            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center shadow-lg">
+              <Clock className="w-8 h-8 text-gray-700" />
+            </div>
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">
+            Loading Intent...
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Fetching details for Intent #{id}
+          </p>
+          <div className="w-10 h-10 border-3 border-gray-300 border-t-gray-700 rounded-full animate-spin mx-auto" />
         </div>
       </div>
     );
@@ -256,19 +264,108 @@ const Intents: React.FC = () => {
 
   if (error || !intent) {
     return (
-      <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center mt-5 lg:mt-10">
-        <div className="text-center py-12 text-gray-600">
-          <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>{error || 'Intent not found'}</p>
+      <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center">
+        <div className="text-center max-w-md bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-8">
+          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500 opacity-50" />
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">
+            Intent Not Found
+          </h2>
+          <p className="text-gray-600 mb-6">{error || 'Intent not found'}</p>
         </div>
       </div>
     );
   }
 
+  const sources = intent.sources || [];
+  const destinations = intent.destinations || [];
+  const tokenAddress = sources[0]?.tokenAddress;
+  const tokenInfo = getTokenInfo(tokenAddress);
+  const statusConfig = getStatusConfig(intent);
+
   return (
-    <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center mt-5 lg:mt-10">
-      <div className="max-w-6xl mx-auto w-full">
-        <IntentVisualizer intent={intent} />
+    <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen">
+      <div className="max-w-6xl mx-auto w-full mt-8 lg:mt-12">
+        {/* Header with Back Button */}
+        <div className="flex items-center justify-between mb-10">
+          <button
+            onClick={() => navigate('/explorer')}
+            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl transition-all font-semibold text-sm text-gray-900"
+          >
+            <ChevronLeft size={16} />
+            Back to Explorer
+          </button>
+          <div className="text-center">
+            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-3 tracking-tight">
+              Intent #{intent.id}
+            </h1>
+            <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg inline-flex mx-auto mb-6">
+              <span className={statusConfig.color}>
+                {statusConfig.icon}
+              </span>
+              <span className={`text-lg font-semibold ${statusConfig.color}`}>
+                {getStatusDisplay(intent)}
+              </span>
+            </div>
+            <p className="text-gray-600 text-base">
+              <Clock size={16} className="inline mr-1" /> Expiry: {formatDate(intent.expiry)}
+            </p>
+          </div>
+          <div className="w-32" /> {/* Spacer for alignment */}
+        </div>
+
+        {/* From/To Sections */}
+        <div className="w-full flex justify-center mb-8">
+          <div className="p-4 flex items-center gap-6 w-full relative bg-white/10 backdrop-blur-xl rounded-2xl border border-slate-200/50">
+            <FromDisplay
+              sources={sources}
+              tokenInfo={tokenInfo}
+            />
+            <ArrowRight className="w-6 h-6 text-slate-400 flex-shrink-0" />
+            <ToDisplay
+              destinations={destinations}
+              tokenInfo={tokenInfo}
+            />
+          </div>
+        </div>
+
+        {/* Summary Table */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-6 mb-8">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Transaction Summary</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Total Sent</span>
+                <span className="font-semibold text-gray-900">{formatBigIntAmount(sources.reduce((sum, src) => sum + (src.value || 0n), 0n), tokenInfo.decimals)} {tokenInfo.symbol}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Source Chains</span>
+                <span className="font-semibold text-gray-900">{sources.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Primary Source</span>
+                <span className="font-semibold text-gray-900">
+                  {getNetworkInfo(sources[0]?.chainID)?.name || `Chain ${sources[0]?.chainID}`}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Total Received</span>
+                <span className="font-semibold text-gray-900">{formatBigIntAmount(destinations.reduce((sum, dest) => sum + (dest.value || 0n), 0n), tokenInfo.decimals)} {tokenInfo.symbol}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Destination Chains</span>
+                <span className="font-semibold text-gray-900">{destinations.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Primary Destination</span>
+                <span className="font-semibold text-gray-900">
+                  {getNetworkInfo(intent.destinationChainID)?.name || `Chain ${intent.destinationChainID}`}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

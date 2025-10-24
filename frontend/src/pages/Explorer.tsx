@@ -329,12 +329,17 @@ const ExplorerList: React.FC = () => {
     <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen">
       <div className="max-w-6xl mx-auto w-full mt-8 lg:mt-12">
         {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-3 tracking-tight">
-            Intent Explorer
+        <div className="text-center space-y-6 mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-xl rounded-full border border-slate-200/50 text-sm text-gray-700 font-medium mb-4">
+            <Zap className="w-4 h-4 text-gray-600" />
+            Powered by Avail Nexus
+          </div>
+          <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 tracking-tight">
+            Your Intents
+            <span className="text-gray-600"> Explorer</span>
           </h1>
-          <p className="text-gray-600 text-base">
-            Track and manage your cross-chain intents
+          <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            Track, manage, and monitor your cross-chain bridging intents in real-time. Fast, secure, and transparent.
           </p>
         </div>
         
