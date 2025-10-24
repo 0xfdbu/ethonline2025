@@ -463,10 +463,16 @@ export function Bridge() {
   if (!isSdkInitialized || !fromToken || !toToken || !toNetwork) {
     return (
       <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center">
-        <div className="text-center max-w-md">
-          <h2 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-4">Initializing...</h2>
-          <p className="text-slate-600 mb-6">SDK: {isSdkInitialized ? 'Ready' : 'Loading'} | Networks: {toNetwork ? 'Set' : 'Loading'}</p>
-          <div className="w-8 h-8 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin mx-auto" />
+        <div className="text-center max-w-md bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-8">
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">
+            Initializing Bridging
+          </h2>
+          <p className="text-gray-600 mb-6 text-sm">
+            SDK: <span className={isSdkInitialized ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{isSdkInitialized ? 'Ready' : 'Loading'}</span>
+            {' • '}
+            Wallet: <span className={isConnected ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{isConnected ? 'Connected' : 'Disconnected'}</span>
+          </p>
+          <div className="w-10 h-10 border-3 border-gray-300 border-t-gray-700 rounded-full animate-spin mx-auto" />
         </div>
       </div>
     );

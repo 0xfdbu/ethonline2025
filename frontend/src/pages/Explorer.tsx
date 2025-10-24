@@ -306,11 +306,6 @@ const ExplorerList: React.FC = () => {
     return (
       <div className="flex-1 flex flex-col p-4 lg:p-8 relative min-h-screen items-center justify-center">
         <div className="text-center max-w-md bg-white/15 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-8">
-          <div className="mb-6">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center shadow-lg">
-              <Zap className="w-8 h-8 text-gray-700" />
-            </div>
-          </div>
           <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">
             Initializing Explorer
           </h2>
