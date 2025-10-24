@@ -6,6 +6,7 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { MainLayout } from './layouts/MainLayout';
 import { Bridge } from './pages/Bridge';
 import { Explorer } from './pages/Explorer';
+import { Intents } from './pages/Intents';
 import '@xyflow/react/dist/style.css'; // Import React Flow styles globally
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Bridge />} />
           <Route path="/explorer" element={<Explorer />} />
+          <Route path="/intents/:id" element={<Intents />} />
         </Routes>
       </MainLayout>
     </ReactFlowProvider>
