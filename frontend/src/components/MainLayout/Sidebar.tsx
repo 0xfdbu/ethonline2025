@@ -1,7 +1,7 @@
 // frontend/src/components/MainLayout/Sidebar.tsx
 
 import React, { useState, useRef } from 'react';
-import { Move, ArrowLeftRight, Shuffle, Fuel, Search, Github, Layers, Home } from 'lucide-react';
+import { Move, ArrowLeftRight, Search, Github, Layers, Home } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Sidebar() {
@@ -13,7 +13,7 @@ export default function Sidebar() {
 
   const menuItems = [
     { id: 'home', label: 'Home', icon: Home, path: '/', external: false },
-    { id: 'bridge', label: 'Bridge', icon: Move, path: '/bridge', external: false },
+    { id: 'bridge', label: 'Bridge', icon: ArrowLeftRight, path: '/bridge', external: false },
     { id: 'explorer', label: 'Explorer', icon: Search, path: '/explorer', external: false },
     { id: 'github', label: 'GitHub', icon: Github, path: 'https://github.com/0xfdbu/ethonline2025', external: true },
   ];
