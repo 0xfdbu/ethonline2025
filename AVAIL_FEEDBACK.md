@@ -18,14 +18,19 @@ While the SDK enabled a complete application, certain limitations impacted devel
   - **Impact**: Completely blocks intent execution in multi-source scenarios, leading to immediate user failures and high frustration. This broke core bridging functionality during testing, requiring manual balance checks and user education as workarounds.
   - **Recommendation**: Automatically calculate and reserve a small gas buffer (e.g., 0.001 ETH or chain-specific estimate) per source chain during quoting and intent simulation. Expose this via a `gasReservation` (default: enabled). Update the widget to reflect reserved amounts in UI previews. Example:
     ```ts
-    const intent = await nexus.simulateIntent({
+    const prefill = {
       token: SUPPORTED_TOKENS.ETH,
       amount: '0.04',
       chainId: SUPPORTED_CHAINS_IDS.ETHEREUM_SEPOLIA, // Destination
       sourceChains: [SUPPORTED_CHAINS_IDS.OPTIMISM_SEPOLIA, SUPPORTED_CHAINS_IDS.ARBITRUM_SEPOLIA],
       gas: BigInt(1000000000000000n), // Optional explicit gas
       gasReservation: { enabled: true, buffer: '0.001' } // Per-chain buffer
-    });
+    };
+    ```
+    ```tsx
+     <BridgeButton prefill={prefill}>
+       // logic here
+     </BridgeButton>
     ```
     Include real-time gas estimation using the connected provider for accuracy.
   - **Supporting Material**:  
@@ -117,8 +122,6 @@ While the SDK enabled a complete application, certain limitations impacted devel
 
   - **Source Chains Input Flexibility**: The `sourceChains` parameter accepts **only decimal chain IDs**, leading to errors when passing hex values (common from Wagmi's `useChainId`). This caused a runtime issue during testing, requiring manual conversion.
       - **Recommendation**: Enable **dual support (hex or decimal)** with internal normalization. Documentation: Explicitly note accepted formats with conversion examples.
-      - **Supporting Material**:  
-        ![Hex Chain Error](docs/hex-chain-error.png)
   - **Token and Chain Metadata**: While mappings exist, expand documentation with utilities for dynamic resolution (e.g., `getTokenMetadata(address)`). Include testnet examples to avoid mainnet assumptions.
   - **Intent Lifecycle**: Add diagrams for expiry/refund flows, with methods like `refundIntent(id)`.
   - **TypeScript Nuances**: Clarify `bigint` handling in JS (e.g., precision loss in divisions).
@@ -126,7 +129,7 @@ While the SDK enabled a complete application, certain limitations impacted devel
 
 # Conclusion
 
-The Nexus SDK offers a promising foundation for intent-driven applications, enabling a polished product like UniVail in under two weeks. With enhancements to gas reservation, querying, simulation flexibility, **session persistence**, and UI widgets, it could become indispensable for multichain builders. Overall rating: **8/10** – lean and focused, with room for polish.
+The Nexus SDK offers a promising foundation for intent-driven applications, enabling a polished product like UniVail in under two weeks. With enhancements to gas reservation, querying, simulation flexibility, **session persistence**, and UI widgets, it could become indispensable for multichain builders. Overall rating: **8/10** – lean and focused, with room for polish.s
 
 Best regards,  
 @0xfdbu  
