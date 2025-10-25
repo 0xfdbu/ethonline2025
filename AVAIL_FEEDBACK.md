@@ -133,8 +133,6 @@ While the SDK enabled a complete application, certain limitations impacted devel
 
   - **Source Chains Input Flexibility**: The `sourceChains` parameter accepts **only decimal chain IDs**, leading to errors when passing hex values (common from Wagmi's `useChainId`). This caused a runtime issue during testing, requiring manual conversion.
       - **Recommendation**: Enable **dual support (hex or decimal)** with internal normalization. Documentation: Explicitly note accepted formats with conversion examples.
-      - **Supporting Material**:  
-        ![Hex Chain Error](docs/hex-chain-error.png)
   - **Token and Chain Metadata**: While mappings exist, expand documentation with utilities for dynamic resolution (e.g., `getTokenMetadata(address)`). Include testnet examples to avoid mainnet assumptions.
   - **Intent Lifecycle**: Add diagrams for expiry/refund flows, with methods like `refundIntent(id)`.
   - **TypeScript Nuances**: Clarify `bigint` handling in JS (e.g., precision loss in divisions).
