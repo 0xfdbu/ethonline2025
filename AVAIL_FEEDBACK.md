@@ -1,4 +1,4 @@
-## Introduction: My Project and Experience with Nexus SDK
+# Introduction: My Project and Experience with Nexus SDK
 
 Hello Avail team,
 
@@ -6,27 +6,51 @@ I'm **@0xfdbu**, an independent developer focused on multichain applications. Fo
 
 I reviewed the documentation comprehensively during integration, covering setup, unified balances, intent creation, and querying. The SDK provided a strong foundation, but integration revealed opportunities for enhancement. This feedback is constructive, based on delivering a functional application, and includes suggestions prioritized by impact. Supporting materials (screenshots) are in the repo's `docs/` folder.
 
-## Strengths of the Documentation and SDK
+# Strengths of the Documentation and SDK
 
 The intent-based architecture excels in simplifying cross-chain operations. Key positives include:
 
-  - **Setup and Wallet Integration**: The `useNexus` hook integrated seamlessly with AppKit and Wagmi, requiring minimal configuration (\~10 minutes). Documentation clearly outlines provider handling, with the automatic initialization on connection/disconnection reducing boilerplate. See screenshot of implementation in `Header.tsx`: [docs/sdk-init.png](docs/sdk-init.png).
+  - **Setup and Wallet Integration**: The `useNexus` hook integrated seamlessly with AppKit and Wagmi, requiring minimal configuration (\~10 minutes). Documentation clearly outlines provider handling, with the automatic initialization on connection/disconnection reducing boilerplate. See screenshot of implementation in `Header.tsx`:  
+    ![SDK Init](docs/sdk-init.png)
 
   - **Unified Balances**: The `getUnifiedBalance(symbol)` method performed reliably, enabling a portfolio dropdown in the header (limited to ETH, USDC, USDT). It efficiently aggregates across multiple chains, with the `breakdown` array ideal for total value computations.
 
-  - **Intent Creation and Querying**: `createIntent` and `getMyIntents` executed as expected, supporting quote simulation and execution. Pagination parameters facilitated fetching up to 20 intents, with status filtering. Documentation examples were directly applicable. Explorer grid visualization: [docs/intents-grid.png](docs/intents-grid.png).
+  - **Intent Creation and Querying**: `createIntent` and `getMyIntents` executed as expected, supporting quote simulation and execution. Pagination parameters facilitated fetching up to 20 intents, with status filtering. Documentation examples were directly applicable. Explorer grid visualization:  
+    ![Intents Grid](docs/intents-grid.png)
 
   - **Error Handling**: Errors are descriptive (e.g., "Invalid chain ID"), allowing effective try/catch wrapping for user-facing notifications. Typed errors would further improve robustness.
 
 The core workflow—connect, balance check, intent creation, exploration—was intuitive. The "Why Intents?" section effectively introduces the concept with practical examples.
 
-## Areas for Improvement
+# Areas for Improvement
 
 While the SDK enabled a complete application, certain limitations impacted development efficiency. Below are prioritized suggestions, with critical items first.
 
 -----
 
-### 1\. **Critical: Single Intent Retrieval by ID (Essential for Detail Views)**
+### 1. **Extremely Critical: Gas Reservation in Multi-Source Intent Creation (Prevents Transaction Signing Failures)**
+
+  - **Issue**: When creating intents with multiple source chains, the widget and SDK do **not reserve gas for transaction signing on each source chain**. For example, with 0.03 ETH on Optimism Sepolia and 0.02 ETH on Arbitrum Sepolia, requesting a total of 0.04 ETH on Ethereum Sepolia causes the transaction to fail. The widget attempts to use 100% of the balance on one source (e.g., Optimism Sepolia) without leaving gas for signing, preventing the user from even signing the meta-transaction or delegation. This issue is 100% confirmed when using the widget; I did not attempt manual or custom intent creation.
+  - **Impact**: Completely blocks intent execution in multi-source scenarios, leading to immediate user failures and high frustration. This broke core bridging functionality during testing, requiring manual balance checks and user education as workarounds.
+  - **Recommendation**: Automatically calculate and reserve a small gas buffer (e.g., 0.001 ETH or chain-specific estimate) per source chain during quoting and intent creation. Expose this via a `gasReservation` config in `createIntent` (default: enabled). Update the widget to reflect reserved amounts in UI previews. Example:
+    ```ts
+    const intent = await nexus.createIntent({
+      token: SUPPORTED_TOKENS.ETH,
+      amount: '0.04',
+      chainId: SUPPORTED_CHAINS_IDS.ETHEREUM_SEPOLIA, // Destination
+      sourceChains: [SUPPORTED_CHAINS_IDS.OPTIMISM_SEPOLIA, SUPPORTED_CHAINS_IDS.ARBITRUM_SEPOLIA],
+      gas: BigInt(1000000000000000n), // Optional explicit gas
+      gasReservation: { enabled: true, buffer: '0.001' } // Per-chain buffer
+    });
+    ```
+    Include real-time gas estimation using the connected provider for accuracy.
+  - **Supporting Material**:  
+    ![Gas Reservation Fail](docs/gas-reservation-fail.png)
+  - **Documentation Enhancement**: Add a dedicated "Gas Management" section with multi-source examples, including buffer calculations and common pitfalls.
+
+-----
+
+### 2. **Critical: Single Intent Retrieval by ID (Essential for Detail Views)**
 
   - **Issue**: There is **no method to retrieve an individual intent by ID**. For the `/intents/:id` route, I resorted to `getMyIntents({ limit: 50 })` followed by client-side filtering via `.find()`. This is inefficient for users with many intents and prevents targeted refreshes or deep-linking.
   - **Impact**: Delayed detail page development by approximately one day; client-side processing scales poorly and lacks real-time status updates.
@@ -40,22 +64,24 @@ While the SDK enabled a complete application, certain limitations impacted devel
     }
     ```
     Consider future extensions like subscriptions for status changes.
-  - **Supporting Material**: Screenshot of workaround inefficiency: [docs/intent-fetch-hack.png](docs/intent-fetch-hack.png).
+  - **Supporting Material**:  
+    ![Intent Fetch Hack](docs/intent-fetch-hack.png)
   - **Documentation Enhancement**: Introduce a "Common Queries" section with CRUD patterns for better discoverability.
 
 -----
 
-### 2\. **Critical: Flexible Quoting – Support Source-First Simulation**
+### 3. **Critical: Flexible Quoting – Support Source-First Simulation**
 
   - **Issue**: Quoting and simulation are **destination-first**, requiring manual reversal for source-based inputs (e.g., "Send X ETH"). I implemented a JavaScript workaround (`output / (1 - slippage) + fees`), but this is prone to precision errors and doesn't leverage solver optimizations.
   - **Impact**: Required additional development time for UI toggles; users found the destination-first flow counterintuitive compared to standards like Uniswap.
   - **Recommendation**: Add a `simulateFromSource` option or dedicated method like `getQuoteFromSource(sourceAmount, token, chains)` to return adjusted output, fees, and slippage. This would enable bidirectional flows natively.
-  - **Supporting Material**: Screenshot of custom toggle implementation: [docs/source-toggle.png](docs/source-toggle.png).
+  - **Supporting Material**:  
+    ![Source Toggle](docs/source-toggle.png)
   - **Documentation Enhancement**: A "Flexible Quoting" section with examples for both directions, including caveats for volatility.
 
 -----
 
-### 3\. **Critical: Session Persistence (Avoid Re-signing on Refresh)**
+### 4. **Critical: Session Persistence (Avoid Re-signing on Refresh)**
 
   - **Issue**: The current SDK initialization logic requires the user to **sign a meta-transaction** (or similar key-delegation action) **on every page refresh**. This heavily degrades user experience and creates friction.
 
@@ -83,7 +109,7 @@ While the SDK enabled a complete application, certain limitations impacted devel
 
 -----
 
-### 4\. **Medium: Pre-Built Visualizer Component in Widgets**
+### 5. **Medium: Pre-Built Visualizer Component in Widgets**
 
   - **Issue**: No ready-made visualizer for bridge flows (e.g., source/destination chains with amounts). I built a custom one for the bridge page, allowing multi-source selection – it took several hours of React Flow + manual state management.
   - **Impact**: Diverted focus from core features; a reusable component would accelerate prototyping.
@@ -97,24 +123,26 @@ While the SDK enabled a complete application, certain limitations impacted devel
     />
     ```
     This would standardize UIs and save time for similar apps.
-  - **Supporting Material**: Screenshot of custom visualizer: [docs/custom-visualizer.png](docs/custom-visualizer.png).
+  - **Supporting Material**:  
+    ![Custom Visualizer](docs/custom-visualizer.png)
   - **Documentation Enhancement**: Widget gallery with integration guides.
 
 -----
 
-### 5\. **Minor Suggestions**
+### 6. **Minor Suggestions**
 
   - **Source Chains Input Flexibility**: The `sourceChains` parameter accepts **only decimal chain IDs**, leading to errors when passing hex values (common from Wagmi's `useChainId`). This caused a runtime issue during testing, requiring manual conversion.
       - **Recommendation**: Enable **dual support (hex or decimal)** with internal normalization. Documentation: Explicitly note accepted formats with conversion examples.
-      - **Supporting Material**: Error log from hex input: [docs/hex-chain-error.png](docs/hex-chain-error.png).
+      - **Supporting Material**:  
+        ![Hex Chain Error](docs/hex-chain-error.png)
   - **Token and Chain Metadata**: While mappings exist, expand documentation with utilities for dynamic resolution (e.g., `getTokenMetadata(address)`). Include testnet examples to avoid mainnet assumptions.
   - **Intent Lifecycle**: Add diagrams for expiry/refund flows, with methods like `refundIntent(id)`.
   - **TypeScript Nuances**: Clarify `bigint` handling in JS (e.g., precision loss in divisions).
   - **Error Granularity**: Introduce specific codes (e.g., `INSUFFICIENT_BALANCE`) for better UX.
 
-## Conclusion
+# Conclusion
 
-The Nexus SDK offers a promising foundation for intent-driven applications, enabling a polished product like UniVail in under two weeks. With enhancements to querying, simulation flexibility, **session persistence**, and UI widgets, it could become indispensable for multichain builders. Overall rating: **8/10** – lean and focused, with room for polish.
+The Nexus SDK offers a promising foundation for intent-driven applications, enabling a polished product like UniVail in under two weeks. With enhancements to gas reservation, querying, simulation flexibility, **session persistence**, and UI widgets, it could become indispensable for multichain builders. Overall rating: **8/10** – lean and focused, with room for polish.
 
 I'm available for discussions or contributions via GitHub issues. Thank you for the opportunity to build with Avail.
 
