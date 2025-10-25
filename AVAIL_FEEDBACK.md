@@ -4,23 +4,7 @@ Hello Avail team,
 
 I'm **@0xfdbu**, an independent developer focused on multichain applications. For EthOnline 2025, I developed **UniVail**, a React-based frontend for intent-driven bridging powered by the Avail Nexus SDK. The application features wallet integration, bridge simulation and execution across EVM chains, an intent explorer with card-based visualization, and detailed intent views. It uses Tailwind CSS for styling, Wagmi for wallet management, and the Nexus SDK for core blockchain interactions.
 
-I reviewed the documentation comprehensively during integration, covering setup, unified balances, intent creation, and querying. The SDK provided a strong foundation, but integration revealed opportunities for enhancement. This feedback is constructive, based on delivering a functional application, and includes suggestions prioritized by impact. Supporting materials (screenshots) are in the repo's `docs/` folder.
-
-# Strengths of the Documentation and SDK
-
-The intent-based architecture excels in simplifying cross-chain operations. Key positives include:
-
-  - **Setup and Wallet Integration**: The `useNexus` hook integrated seamlessly with AppKit and Wagmi, requiring minimal configuration (\~10 minutes). Documentation clearly outlines provider handling, with the automatic initialization on connection/disconnection reducing boilerplate. See screenshot of implementation in `Header.tsx`:  
-    ![SDK Init](docs/sdk-init.png)
-
-  - **Unified Balances**: The `getUnifiedBalance(symbol)` method performed reliably, enabling a portfolio dropdown in the header (limited to ETH, USDC, USDT). It efficiently aggregates across multiple chains, with the `breakdown` array ideal for total value computations.
-
-  - **Intent Creation and Querying**: `createIntent` and `getMyIntents` executed as expected, supporting quote simulation and execution. Pagination parameters facilitated fetching up to 20 intents, with status filtering. Documentation examples were directly applicable. Explorer grid visualization:  
-    ![Intents Grid](docs/intents-grid.png)
-
-  - **Error Handling**: Errors are descriptive (e.g., "Invalid chain ID"), allowing effective try/catch wrapping for user-facing notifications. Typed errors would further improve robustness.
-
-The core workflow—connect, balance check, intent creation, exploration—was intuitive. The "Why Intents?" section effectively introduces the concept with practical examples.
+I reviewed the documentation comprehensively during integration, covering setup, unified balances, intent simulation, and querying. The SDK provided a strong foundation, but integration revealed opportunities for enhancement. This feedback is constructive, based on delivering a functional application, and includes suggestions prioritized by impact. Supporting materials (screenshots) are in the repo's `docs/` folder.
 
 # Areas for Improvement
 
@@ -28,13 +12,13 @@ While the SDK enabled a complete application, certain limitations impacted devel
 
 -----
 
-### 1. **Extremely Critical: Gas Reservation in Multi-Source Intent Creation (Prevents Transaction Signing Failures)**
+### 1. **Extremely Critical: Gas Reservation in Multi-Source Intent Simulation (Prevents Transaction Signing Failures)**
 
-  - **Issue**: When creating intents with multiple source chains, the widget and SDK do **not reserve gas for transaction signing on each source chain**. For example, with 0.03 ETH on Optimism Sepolia and 0.02 ETH on Arbitrum Sepolia, requesting a total of 0.04 ETH on Ethereum Sepolia causes the transaction to fail. The widget attempts to use 100% of the balance on one source (e.g., Optimism Sepolia) without leaving gas for signing, preventing the user from even signing the meta-transaction or delegation. This issue is 100% confirmed when using the widget; I did not attempt manual or custom intent creation.
+  - **Issue**: When simulating intents with multiple source chains, the widget and SDK do **not reserve gas for transaction signing on each source chain**. For example, with 0.03 ETH on Optimism Sepolia and 0.02 ETH on Arbitrum Sepolia, requesting a total of 0.04 ETH on Ethereum Sepolia causes the transaction to fail. The widget attempts to use 100% of the balance on one source (e.g., Optimism Sepolia) without leaving gas for signing, preventing the user from even signing the meta-transaction or delegation. This issue is 100% confirmed when using the widget; I did not attempt manual or custom intent simulation.
   - **Impact**: Completely blocks intent execution in multi-source scenarios, leading to immediate user failures and high frustration. This broke core bridging functionality during testing, requiring manual balance checks and user education as workarounds.
-  - **Recommendation**: Automatically calculate and reserve a small gas buffer (e.g., 0.001 ETH or chain-specific estimate) per source chain during quoting and intent creation. Expose this via a `gasReservation` config in `createIntent` (default: enabled). Update the widget to reflect reserved amounts in UI previews. Example:
+  - **Recommendation**: Automatically calculate and reserve a small gas buffer (e.g., 0.001 ETH or chain-specific estimate) per source chain during quoting and intent simulation. Expose this via a `gasReservation` (default: enabled). Update the widget to reflect reserved amounts in UI previews. Example:
     ```ts
-    const intent = await nexus.createIntent({
+    const intent = await nexus.simulateIntent({
       token: SUPPORTED_TOKENS.ETH,
       amount: '0.04',
       chainId: SUPPORTED_CHAINS_IDS.ETHEREUM_SEPOLIA, // Destination
@@ -133,6 +117,8 @@ While the SDK enabled a complete application, certain limitations impacted devel
 
   - **Source Chains Input Flexibility**: The `sourceChains` parameter accepts **only decimal chain IDs**, leading to errors when passing hex values (common from Wagmi's `useChainId`). This caused a runtime issue during testing, requiring manual conversion.
       - **Recommendation**: Enable **dual support (hex or decimal)** with internal normalization. Documentation: Explicitly note accepted formats with conversion examples.
+      - **Supporting Material**:  
+        ![Hex Chain Error](docs/hex-chain-error.png)
   - **Token and Chain Metadata**: While mappings exist, expand documentation with utilities for dynamic resolution (e.g., `getTokenMetadata(address)`). Include testnet examples to avoid mainnet assumptions.
   - **Intent Lifecycle**: Add diagrams for expiry/refund flows, with methods like `refundIntent(id)`.
   - **TypeScript Nuances**: Clarify `bigint` handling in JS (e.g., precision loss in divisions).
@@ -141,8 +127,6 @@ While the SDK enabled a complete application, certain limitations impacted devel
 # Conclusion
 
 The Nexus SDK offers a promising foundation for intent-driven applications, enabling a polished product like UniVail in under two weeks. With enhancements to gas reservation, querying, simulation flexibility, **session persistence**, and UI widgets, it could become indispensable for multichain builders. Overall rating: **8/10** – lean and focused, with room for polish.
-
-I'm available for discussions or contributions via GitHub issues. Thank you for the opportunity to build with Avail.
 
 Best regards,  
 @0xfdbu  
