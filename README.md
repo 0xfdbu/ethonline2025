@@ -52,16 +52,8 @@ UniVail is a modern, intent-driven cross-chain bridging application built on the
    # or
    yarn install
    ```
-
-3. Set up environment variables:
-   Create a `.env` file in the root directory (inside the frontend folder):
-   ```
-   VITE_APPKIT_PROJECT_ID=your_appkit_project_id
-   VITE_WAGMI_PROJECT_ID=your_wagmi_project_id
-   # Add any additional chain-specific RPC URLs if needed
-   ```
-
-4. Run the development server:
+   
+3. Run the development server:
    ```bash
    npm run dev
    # or
@@ -129,11 +121,12 @@ Contributions are welcome! Please follow these steps:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 🔧 Acknowledgments
 
 - [Avail Nexus](https://availproject.org/) for the intent-based bridging SDK.
 - [Wagmi](https://wagmi.sh/) and [AppKit](https://reown.com/appkit) for wallet abstractions.
 - [Lucide React](https://lucide.dev/) for icons.
+- Avail team for the support with everything.
 - Built with ❤️ for the multichain future.
 
 ---
