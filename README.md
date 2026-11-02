@@ -11,11 +11,11 @@ UniVail is a modern, intent-driven cross-chain bridging application built on the
 
 - **Intent-Based Bridging**: Create and execute cross-chain transfers using smart intents powered by Avail Nexus.
 - **Unified Portfolio View**: Track balances across chains without switching networks.
-- **Intent Explorer**: Monitor, manage, and view details of your bridging intents in real-time.
+- **Intent Explorer**: Monitor and view details of your bridging intents.
 - **Multi-Chain Support**: Compatible with major EVM chains like Ethereum, Polygon, Arbitrum, and more.
 - **Wallet Integration**: Seamless connection via Web3Modal (AppKit) with support for MetaMask, WalletConnect, and others.
 - **Responsive Design**: Beautiful, mobile-first UI with Tailwind CSS and Lucide icons.
-- **Real-Time Status Updates**: Live tracking of intent fulfillment, refunds, and expirations.
+- **Real-Time Status Updates**: tracking of intent fulfillment.
 
 ## 🛠 Tech Stack
 
